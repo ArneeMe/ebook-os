@@ -28,9 +28,6 @@ What is done and what is next. How the system fits together:
 
 ## Next (ideas Arne has mentioned, not started)
 
-- Bokhylle: Gutenberg books in this repo, fetched from a list on the reader and
-  the T5 (a script app, docs/waddle/APPS.md).
-
 - Cloudflare timer that starts `nyheter.yml` every hour (GitHub skips runs).
   Needs a GitHub token as a Cloudflare secret.
 - Hjem fetch in the background so taps are not ignored for a few seconds
@@ -111,7 +108,9 @@ connection has a public IP (no CGNAT).
 Done: apps in Lua that come from `apps/` in this repo and run on both devices
 (docs/waddle/APPS.md), under Apper (a sixth button on the reader's Hjem, the
 Apper page on the T5). The first is Tegn: draw with a finger or a passive touch
-pen (both screens are capacitive: no pressure, finger precision).
+pen (both screens are capacitive: no pressure, finger precision). Bokhylle
+lists `books/` in this repo (books without copyright, added with `waddle book
+--hylle <checkout>`) and fetches one to /Books with a tap.
 
 ## Decided against
 

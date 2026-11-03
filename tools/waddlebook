@@ -14,7 +14,13 @@ Each book is saved in ~/Downloads/books, then uploaded over Wi-Fi to /Books on
 the reader. The reader must be on File Transfer -> Join a Network. If it is not
 reachable, the books stay in ~/Downloads/books; run waddle book on them later.
 
+Or put them in the bokhylle (books/ in a waddleos checkout), which the
+Bokhylle app on the reader and the T5 fetches from. Only books without
+copyright (Project Gutenberg and the like): the repo is public.
+    waddle book --hylle ~/kode/waddleos https://www.gutenberg.org/ebooks/1342
+
 Options:
+    --hylle DIR  add to DIR/books and its list instead of sending to the reader
     -o DIR       save somewhere else than ~/Downloads/books
     -d FOLDER    folder on the reader (default /Books)
     --ip IP      reader IP (default $WADDLE_IP or 192.168.50.185)
@@ -572,6 +578,48 @@ def save(data, folder, name):
     return path
 
 
+# ================= bokhylle (books/ in the repo) =================
+SHELF_LIST = "index.tsv"   # file, title, author, bytes; tab-separated, one book per line
+
+
+def shelf_name(title, creator, hint):
+    """A plain file name the Bokhylle app accepts: ASCII letters, digits, '-', '.'."""
+    base = nice_name(title, creator, hint)[:-5]
+    for a, b in (("æ", "ae"), ("ø", "o"), ("å", "aa"), ("Æ", "Ae"), ("Ø", "O"), ("Å", "Aa")):
+        base = base.replace(a, b)
+    base = re.sub(r"[^A-Za-z0-9]+", "-", base).strip("-")[:60] or "book"
+    return base + ".epub"
+
+
+def add_to_shelf(repo, paths):
+    books = os.path.join(repo, "books")
+    if not os.path.isdir(os.path.join(repo, ".git")):
+        raise Rejected(f"{repo} is not a waddleos checkout")
+    os.makedirs(books, exist_ok=True)
+    rows = {}
+    list_path = os.path.join(books, SHELF_LIST)
+    if os.path.exists(list_path):
+        with open(list_path, encoding="utf-8") as f:
+            for line in f:
+                parts = line.rstrip("\n").split("\t")
+                if len(parts) == 4:
+                    rows[parts[0]] = parts
+    for path in paths:
+        with open(path, "rb") as f:
+            data = f.read()
+        z = zipfile.ZipFile(io.BytesIO(data))
+        title, creator = book_meta(z.read(read_container(z)))
+        name = shelf_name(title, creator, path)
+        save(data, books, name)
+        clean = lambda t: re.sub(r"[\t\r\n]+", " ", t or "").strip()
+        rows[name] = [name, clean(title) or name[:-5], clean(creator), str(len(data))]
+        say(f"  {G}OK{N}  in the bokhylle: books/{name}")
+    with open(list_path, "w", encoding="utf-8") as f:
+        for row in sorted(rows.values(), key=lambda r: (r[2].lower(), r[1].lower())):
+            f.write("\t".join(row) + "\n")
+    say(f"\nCommit and push books/ in {repo}; the Bokhylle app lists them after that.")
+
+
 # ================= reader (Wi-Fi) =================
 def human(n):
     return f"{n / 1048576:.1f} MB" if n >= 1048576 else f"{n / 1024:.0f} KB"
@@ -694,6 +742,7 @@ def main():
     ap.add_argument("--ip", default=os.environ.get("WADDLE_IP", DEFAULT_IP), help="reader IP (env WADDLE_IP)")
     ap.add_argument("--no-send", action="store_true", help="only download and clean, do not upload")
     ap.add_argument("-y", "--yes", action="store_true", help="never ask, pick recommended options")
+    ap.add_argument("--hylle", metavar="DIR", help="add to DIR/books (a waddleos checkout) instead of sending")
     args = ap.parse_args()
     if args.yes:
         INTERACTIVE = False
@@ -722,6 +771,14 @@ def main():
 
     if not saved:
         return 1
+    if args.hylle:
+        say(f"{Y}The repo is public: only books without copyright (Gutenberg and the like).{N}")
+        try:
+            add_to_shelf(os.path.abspath(os.path.expanduser(args.hylle)), saved)
+        except Rejected as e:
+            say(f"  {R}REJECTED:{N} {e}")
+            return 1
+        return 0 if len(saved) == len(sources) else 1
     sent = 0 if args.no_send else send_to_reader(args.ip, "/" + args.dest.strip("/"), saved)
     say(f"\n{G}{B}🐧 Done:{N} {len(saved)} of {len(sources)} book(s) saved"
         + ("" if args.no_send else f", {sent} sent to the reader") + ".")

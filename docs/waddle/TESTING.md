@@ -252,3 +252,6 @@ Script apps (docs/waddle/APPS.md):
 - [ ] Holding Tegn in Hent apper removes it.
 - [ ] Free heap in `waddle mesh check` (T5) is the same after opening and
       closing an app a few times.
+- [ ] `waddle book --hylle <checkout> <Gutenberg link>`, commit and push: Bokhylle
+      lists the book, a tap fetches it to /Books (then "Har"), and it opens in
+      the library.

@@ -155,6 +155,7 @@ extern "C" uint32_t uzlib_crc32(const void*, unsigned int, uint32_t crc) { retur
 void openT5Setting(T5SettingsActivity::Row) {}
 // Apper: the T5's built-in rows (T5SettingsLinks.cpp), and the web for script
 // apps read from this checkout's apps/ folder instead of GitHub.
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 
@@ -167,8 +168,10 @@ const std::vector<apps::Builtin>& apps::builtins() {
 }
 void apps::openBuiltin(size_t) {}
 bool apps::net::get(const std::string& url, std::string& body, size_t, std::string& err) {
-  const size_t at = url.find("/apps/");
-  std::ifstream in(at == std::string::npos ? "" : url.substr(at + 1));
+  // .../waddle/<path>: sd/web/<path> when the screen sets one up, else this checkout's.
+  const size_t at = url.find("/waddle/");
+  const std::string path = at == std::string::npos ? "" : url.substr(at + 8);
+  std::ifstream in(std::filesystem::exists(sim::rootDir + "/web/" + path) ? sim::rootDir + "/web/" + path : path);
   if (!in) {
     err = "ikke i simulatoren";
     return false;

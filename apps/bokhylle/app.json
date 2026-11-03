@@ -1,0 +1,8 @@
+{
+  "name": "Bokhylle",
+  "description": "Bøker uten opphavsrett fra waddleos-repoet",
+  "version": 1,
+  "devices": ["x4pro", "t5"],
+  "net": true,
+  "books": true
+}

@@ -5,8 +5,28 @@
       "name": "Tegn",
       "description": "Tegn med fingeren eller en touchpenn",
       "version": 1,
-      "devices": ["x4pro", "t5"],
-      "files": ["app.json", "main.lua"]
+      "devices": [
+        "x4pro",
+        "t5"
+      ],
+      "files": [
+        "app.json",
+        "main.lua"
+      ]
+    },
+    {
+      "id": "bokhylle",
+      "name": "Bokhylle",
+      "description": "Bøker uten opphavsrett fra waddleos-repoet",
+      "version": 1,
+      "devices": [
+        "x4pro",
+        "t5"
+      ],
+      "files": [
+        "app.json",
+        "main.lua"
+      ]
     }
   ]
 }
