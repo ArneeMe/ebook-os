@@ -242,3 +242,13 @@ gateway's HELLO. Install the server:
       A unit that syncs over Wi-Fi gets the messages sent while the Pi was off.
 - [ ] The page says "Svarer ikke" for the gateway when it is plugged in but
       silent (e.g. hold its RST button for a while).
+
+Script apps (docs/waddle/APPS.md):
+- [ ] Reader Hjem has a sixth button (Apper); the T5's Apper shows Bøker, Nyheter
+      and "+ Hent flere apper".
+- [ ] Hent flere apper on Wi-Fi lists Tegn; a tap installs it, and it opens.
+- [ ] Tegn: lines follow the finger or a touch pen without long delay, Tykk,
+      Visk and Tøm (tap twice) work, and the drawing is there after a restart.
+- [ ] Holding Tegn in Hent apper removes it.
+- [ ] Free heap in `waddle mesh check` (T5) is the same after opening and
+      closing an app a few times.

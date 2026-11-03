@@ -20,11 +20,13 @@
 #include "core/MappedInputManager.h"
 #include "apps/news/NewsActivity.h"
 #include "apps/bluesound/NodeActivity.h"
+#include "apps/store/AppsActivity.h"
 #include "core/waddle/WaddleDraw.h"
 #include "WaddleWeatherIcons.h"
 #include "core/waddle/WaddleWifi.h"
 #include "core/activities/ActivityManager.h"
 #include "core/components/UITheme.h"
+#include "core/components/icons/blocks.h"
 #include "core/components/icons/folder.h"
 #include "core/components/icons/library.h"
 #include "core/components/icons/settings2.h"
@@ -321,6 +323,9 @@ void WaddleHomeActivity::activate(const int target) {
     case T_BLUESOUND:
       activityManager.replaceActivity(std::make_unique<NodeActivity>(renderer, mappedInput));
       return;
+    case T_APPS:
+      activityManager.replaceActivity(std::make_unique<AppsActivity>(renderer, mappedInput));
+      return;
     case T_SETTINGS:
       activityManager.goToSettings();
       return;
@@ -525,13 +530,14 @@ void WaddleHomeActivity::render(RenderLock&&) {
   renderer.fillRect(side, y, pageWidth - 2 * side, 2);
   const int newsBottom = y + 2;
 
-  // Buttons, icons only: Bibliotek, Filer, Overføring, Bluesound, Innstillinger.
+  // Buttons, icons only: Bibliotek, Filer, Overføring, Bluesound, Apper, Innstillinger.
   constexpr int buttonH = 64;
   constexpr int gap = 8;
+  constexpr int buttons = T_SETTINGS - T_LIBRARY + 1;
   const int buttonsY = pageHeight - buttonH - 36;
-  const int buttonW = (pageWidth - 2 * side - 4 * gap) / 5;
-  const uint8_t* icons[] = {LibraryIcon, FolderIcon, WifiIcon, nullptr, Settings2Icon};
-  for (int i = 0; i < 5; i++) {
+  const int buttonW = (pageWidth - 2 * side - (buttons - 1) * gap) / buttons;
+  const uint8_t* icons[] = {LibraryIcon, FolderIcon, WifiIcon, nullptr, BlocksIcon, Settings2Icon};
+  for (int i = 0; i < buttons; i++) {
     const int x = side + i * (buttonW + gap);
     renderer.drawRoundedRect(x, buttonsY, buttonW, buttonH, 2, 12, true);
     const int iconX = x + (buttonW - 32) / 2;

@@ -1,5 +1,5 @@
 #include "T5HomeActivity.h"
-#include "T5AppsActivity.h"
+#include "apps/store/AppsActivity.h"
 #include "T5SettingsActivity.h"
 
 #include <GfxRenderer.h>
@@ -96,7 +96,7 @@ void T5HomeActivity::activate(const int target) {
       activityManager.replaceActivity(std::make_unique<NotesActivity>(renderer, mappedInput));
       break;
     case T_APPS:
-      activityManager.replaceActivity(std::make_unique<T5AppsActivity>(renderer, mappedInput));
+      activityManager.replaceActivity(std::make_unique<AppsActivity>(renderer, mappedInput));
       break;
     case T_SETTINGS:
       activityManager.replaceActivity(std::make_unique<T5SettingsActivity>(renderer, mappedInput));
