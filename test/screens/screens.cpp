@@ -580,6 +580,21 @@ int main(int argc, char** argv) {
     show(store, "t5-hent-apper", [](Activity& screen) { screen.loop(); });
   }
   {
+    // Bokhylle with three books on the shelf, one already on the card.
+    std::filesystem::copy("apps/bokhylle", sim::rootDir + "/Apper/bokhylle", std::filesystem::copy_options::recursive);
+    std::filesystem::create_directories(sim::rootDir + "/web/books");
+    std::ofstream(sim::rootDir + "/web/books/index.tsv")
+        << "Jane-Austen-Pride-and-Prejudice.epub\tPride and Prejudice\tJane Austen\t512000\n"
+        << "Lewis-Carroll-Alice-s-Adventures-in-Wonderland.epub\tAlice's Adventures in Wonderland\tLewis Carroll\t190000\n"
+        << "Henrik-Ibsen-Et-dukkehjem.epub\tEt dukkehjem\tHenrik Ibsen\t140000\n";
+    std::filesystem::create_directories(sim::rootDir + "/Books");
+    std::ofstream(sim::rootDir + "/Books/Henrik-Ibsen-Et-dukkehjem.epub") << "x";
+    apps::Manifest shelf;
+    apps::readManifest("bokhylle", shelf);
+    AppActivity app(renderer, mappedInputManager, shelf);
+    show(app, "t5-bokhylle", [](Activity& screen) { screen.loop(); });
+  }
+  {
     // Tegn with a drawing in its storage.
     std::filesystem::create_directories(sim::rootDir + "/Apper/tegn/data");
     std::ofstream(sim::rootDir + "/Apper/tegn/data/tegning.txt") << "4 0 140 560 140 760 400 760 400 560 140 560\n4 0 120 575 270 430 420 575\n4 0 240 760 240 660 300 660 300 760\n4 0 170 600 220 600 220 640 170 640 170 600\n10 0 470 230 469 238 466 246 462 253 456 259 450 264 442 268 434 269 425 269 417 268 410 264 403 259 397 253 393 246 390 238 390 230 390 221 393 213 397 206 403 200 410 195 417 191 425 190 434 190 442 191 450 195 456 200 462 206 466 213 469 221 470 230\n4 0 485 230 510 230\n4 0 468 268 486 286\n4 0 430 285 430 310\n4 0 391 268 373 286\n4 0 375 230 350 230\n4 0 391 191 373 173\n4 0 430 175 430 150\n4 0 468 191 486 173\n10 0 40 800 140 790 260 805 380 792 500 800";

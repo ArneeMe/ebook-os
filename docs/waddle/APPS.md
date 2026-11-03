@@ -69,6 +69,13 @@ when the app closes): `get(url)` (body, or nil and why), `download(url, name)`
 
 `print(...)` goes to the serial log.
 
+## The apps
+
+- **Tegn** (`apps/tegn`): draw with a finger or a passive touch pen.
+- **Bokhylle** (`apps/bokhylle`): the books in `books/` (`index.tsv`: file,
+  title, author, bytes, tab-separated), added with `waddle book --hylle
+  <checkout>`. Only books without copyright: the repo is public.
+
 ## Limits
 
 2 MB of memory (PSRAM), 256 KB for `main.lua` and for each file or answer.
