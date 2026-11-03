@@ -1,0 +1,6 @@
+{
+  "name": "lua",
+  "version": "5.4.7",
+  "description": "Lua 5.4.7 (lua.org, MIT), the core and the safe libraries only: the engine for script apps (docs/waddle/APPS.md).",
+  "build": { "flags": ["-w"] }
+}

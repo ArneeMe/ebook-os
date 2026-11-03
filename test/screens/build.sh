@@ -28,7 +28,7 @@ flags=(-std=gnu++2a -O1 -g -w
   -Itest/screens/stubs -Itest/sim/stubs -Isrc
   -Ilib/GfxRenderer -Ilib/EpdFont -Ilib/Utf8 -Ilib/MiniBidi -Ilib/Memory -Ilib/InflateReader -Ilib/uzlib/src
   -Ilib -Ilib/Epub -Ilib/FsHelpers -Ilib/BlePageTurner/include -Ilib/I18n -Ilib/Serialization
-  -Ilib/WaddleMesh/src -Ilib/monocypher/src
+  -Ilib/WaddleMesh/src -Ilib/monocypher/src -Ilib/lua/src
   -I$sdk/hardware/BoardConfig/include -I$sdk/display/FreeInkDisplay/include -I$sdk/ui/FreeInkUI/include
   -I$sdk/assets/Icons/include -I$sdk/network/BleKeyboardHost/include
   -isystem "$json")
@@ -47,14 +47,15 @@ sources=(
   # The screens, and the screens they open.
   src/core/activities/Activity.cpp src/core/util/ButtonNavigator.cpp
   src/core/activities/util/KeyboardEntryActivity.cpp src/core/activities/util/NorwegianKeyboard.cpp
-  src/products/t5s3/T5HomeActivity.cpp src/products/t5s3/T5SettingsActivity.cpp src/products/t5s3/T5AppsActivity.cpp src/apps/notes/NotesActivity.cpp
+  src/products/t5s3/T5HomeActivity.cpp src/products/t5s3/T5SettingsActivity.cpp src/apps/notes/NotesActivity.cpp
+  src/apps/store/LuaApp.cpp src/apps/store/AppActivity.cpp src/apps/store/AppsActivity.cpp src/apps/store/AppStore.cpp
   src/apps/messages/MeshUi.cpp src/apps/messages/MessagesActivity.cpp src/apps/messages/PlayUi.cpp
   src/apps/map/MapActivity.cpp src/apps/sos/SosAlertActivity.cpp
   # The mesh: the real node, store and crypto.
   src/services/mesh/MeshNode.cpp src/services/mesh/MeshReceive.cpp src/services/mesh/MeshKeys.cpp src/services/mesh/MeshServerSync.cpp src/services/mesh/MeshPairing.cpp src/services/mesh/MessageStore.cpp src/services/mesh/MeshConfig.cpp src/services/mesh/MeshGroups.cpp
   lib/WaddleMesh/src/*.cpp
 )
-csources=(lib/monocypher/src/monocypher.c lib/monocypher/src/monocypher-ed25519.c lib/MiniBidi/minibidi.c lib/uzlib/src/*.c)
+csources=(lib/lua/src/*.c lib/monocypher/src/monocypher.c lib/monocypher/src/monocypher-ed25519.c lib/MiniBidi/minibidi.c lib/uzlib/src/*.c)
 
 # Every file at once, then link. time() is wrapped so the clock is the program's.
 objs=()

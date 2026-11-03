@@ -29,7 +29,8 @@
 
 #include "Stubs.h"
 #include "apps/map/MapActivity.h"
-#include "products/t5s3/T5AppsActivity.h"
+#include "apps/store/AppActivity.h"
+#include "apps/store/AppsActivity.h"
 #include "products/t5s3/T5SettingsActivity.h"
 #include "apps/messages/MeshUi.h"
 #include "apps/messages/MessagesActivity.h"
@@ -568,8 +569,24 @@ int main(int argc, char** argv) {
     show(settings, "t5-innstillinger");
   }
   {
-    T5AppsActivity apps(renderer, mappedInputManager);
+    // Apper, with Tegn installed from this checkout's apps/ folder.
+    std::filesystem::create_directories(sim::rootDir + "/Apper");
+    std::filesystem::copy("apps/tegn", sim::rootDir + "/Apper/tegn", std::filesystem::copy_options::recursive);
+    AppsActivity apps(renderer, mappedInputManager);
     show(apps, "t5-apper");
+  }
+  {
+    StoreActivity store(renderer, mappedInputManager);
+    show(store, "t5-hent-apper", [](Activity& screen) { screen.loop(); });
+  }
+  {
+    // Tegn with a drawing in its storage.
+    std::filesystem::create_directories(sim::rootDir + "/Apper/tegn/data");
+    std::ofstream(sim::rootDir + "/Apper/tegn/data/tegning.txt") << "4 0 140 560 140 760 400 760 400 560 140 560\n4 0 120 575 270 430 420 575\n4 0 240 760 240 660 300 660 300 760\n4 0 170 600 220 600 220 640 170 640 170 600\n10 0 470 230 469 238 466 246 462 253 456 259 450 264 442 268 434 269 425 269 417 268 410 264 403 259 397 253 393 246 390 238 390 230 390 221 393 213 397 206 403 200 410 195 417 191 425 190 434 190 442 191 450 195 456 200 462 206 466 213 469 221 470 230\n4 0 485 230 510 230\n4 0 468 268 486 286\n4 0 430 285 430 310\n4 0 391 268 373 286\n4 0 375 230 350 230\n4 0 391 191 373 173\n4 0 430 175 430 150\n4 0 468 191 486 173\n10 0 40 800 140 790 260 805 380 792 500 800";
+    apps::Manifest tegn;
+    apps::readManifest("tegn", tegn);
+    AppActivity app(renderer, mappedInputManager, tegn);
+    show(app, "t5-tegn");
   }
   {
     // Kari, tapped on the map.

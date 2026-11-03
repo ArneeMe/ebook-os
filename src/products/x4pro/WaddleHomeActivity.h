@@ -8,7 +8,7 @@
 #include "core/activities/Activity.h"
 
 // WaddleOS home screen ("Hjem"): clock, date and today's weather, the book
-// being read, the top unread NRK headlines and five buttons. Shows the saved
+// being read, the top unread NRK headlines and six buttons. Shows the saved
 // weather and paper at once; when they are older than 30 minutes it joins
 // Wi-Fi, fetches new ones from arnee.me, redraws once and turns Wi-Fi off.
 class WaddleHomeActivity final : public Activity {
@@ -47,6 +47,7 @@ class WaddleHomeActivity final : public Activity {
     T_FILES,
     T_TRANSFER,
     T_BLUESOUND,
+    T_APPS,
     T_SETTINGS,
     T_COUNT
   };

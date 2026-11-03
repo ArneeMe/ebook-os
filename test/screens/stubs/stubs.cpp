@@ -128,6 +128,11 @@ bool MappedInputManager::hasTouch() const { return true; }
 bool MappedInputManager::wasScreenTouchDown(int&, int&) const { return false; }
 bool MappedInputManager::isScreenTouchHeld(int&, int&) const { return false; }
 bool MappedInputManager::wasHomeGesture() const { return false; }
+bool MappedInputManager::wasBackGesture() const { return false; }
+bool MappedInputManager::wasScreenTouchPressed(int&, int&) const { return false; }
+bool MappedInputManager::wasScreenTouchReleased() const { return false; }
+bool MappedInputManager::wasScreenLongPress(int&, int&) const { return false; }
+MappedInputManager::SwipeDir MappedInputManager::wasSwipe(int*, int*) const { return SwipeDir::None; }
 unsigned long MappedInputManager::getHeldTime() const { return 0; }
 MappedInputManager::Labels MappedInputManager::mapLabels(const char* back, const char* confirm, const char* previous,
                                                          const char* next) const {
@@ -148,5 +153,33 @@ extern "C" uint32_t uzlib_crc32(const void*, unsigned int, uint32_t crc) { retur
 // The screens behind the settings rows are not drawn here.
 #include "products/t5s3/T5SettingsActivity.h"
 void openT5Setting(T5SettingsActivity::Row) {}
-#include "products/t5s3/T5AppsActivity.h"
-void openT5App(T5AppsActivity::Row) {}
+// Apper: the T5's built-in rows (T5SettingsLinks.cpp), and the web for script
+// apps read from this checkout's apps/ folder instead of GitHub.
+#include <fstream>
+#include <sstream>
+
+#include "apps/store/AppNet.h"
+#include "apps/store/AppStore.h"
+const std::vector<apps::Builtin>& apps::builtins() {
+  static const std::vector<Builtin> list = {{"Bøker", "Biblioteket på minnekortet"},
+                                            {"Nyheter", "NRK, hentes når du åpner den"}};
+  return list;
+}
+void apps::openBuiltin(size_t) {}
+bool apps::net::get(const std::string& url, std::string& body, size_t, std::string& err) {
+  const size_t at = url.find("/apps/");
+  std::ifstream in(at == std::string::npos ? "" : url.substr(at + 1));
+  if (!in) {
+    err = "ikke i simulatoren";
+    return false;
+  }
+  std::stringstream text;
+  text << in.rdbuf();
+  body = text.str();
+  return true;
+}
+bool apps::net::download(const std::string&, const std::string&, std::string& err) {
+  err = "ikke i simulatoren";
+  return false;
+}
+void apps::net::off() {}
