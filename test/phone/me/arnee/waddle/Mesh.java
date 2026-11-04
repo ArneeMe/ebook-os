@@ -24,6 +24,6 @@ public class Mesh {
     public static native String pairFinish(String box);
     public static native boolean startPoll(int conv, String question, String options);
     public static native boolean vote(int conv, int sender, long counter, int option);
-    public static native boolean startGame(int conv);
-    public static native boolean move(int conv, int sender, long counter, int col);
+    public static native boolean startGame(int conv, String kind);
+    public static native boolean move(int conv, int sender, long counter, String move);
 }

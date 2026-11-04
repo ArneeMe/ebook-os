@@ -84,6 +84,55 @@ int pollHeight(const GfxRenderer& renderer, const Play& p, const int width) {
 
 int gameHeight() { return PAD + mesh::play::FourInRow::ROWS * MINI + 8 + PAD; }
 
+// Sjakk pieces as Norwegian letters in a circle: white pieces open, black filled.
+const char* letterOf(const char piece) {
+  switch (piece | 0x20) {
+    case 'k': return "K";
+    case 'q': return "D";
+    case 'r': return "T";
+    case 'b': return "L";
+    case 'n': return "S";
+    default: return "B";
+  }
+}
+
+// The chess board with white at the bottom, or black when flipped.
+void drawChess(const GfxRenderer& renderer, const mesh::play::Chess& c, const int x, const int y, const int cell,
+               const bool flipped, const int selected = -1, const std::vector<int>& marks = {}, const int chosen = -1) {
+  renderer.drawRect(x - 2, y - 2, 8 * cell + 4, 8 * cell + 4, 2, true);
+  const bool letters = cell >= 30;
+  for (int sq = 0; sq < 64; sq++) {
+    const int file = sq % 8, rank = sq / 8;
+    const int col = flipped ? 7 - file : file, row = flipped ? rank : 7 - rank;
+    const int sx = x + col * cell, sy = y + row * cell;
+    if ((file + rank) % 2 == 0) renderer.fillRectDither(sx, sy, cell, cell, Color::LightGray);
+    if (sq == c.lastFrom || sq == c.lastTo) renderer.drawRect(sx + 1, sy + 1, cell - 2, cell - 2, 2, true);
+    if (sq == selected || sq == chosen) renderer.drawRect(sx + 1, sy + 1, cell - 2, cell - 2, std::max(3, cell / 12), true);
+    const char p = c.board[sq];
+    const int pad = std::max(1, cell / 8), size = cell - 2 * pad;
+    if (p != '.') {
+      const bool white = p >= 'A' && p <= 'Z';
+      if (white) {
+        renderer.fillRoundedRect(sx + pad, sy + pad, size, size, size / 2, Color::White);
+        renderer.drawRoundedRect(sx + pad, sy + pad, size, size, std::max(1, cell / 20), size / 2, true);
+      } else {
+        renderer.fillRoundedRect(sx + pad, sy + pad, size, size, size / 2, Color::Black);
+      }
+      if (letters) {
+        const char* l = letterOf(p);
+        const int lw = renderer.getTextWidth(UI_12_FONT_ID, l, EpdFontFamily::BOLD);
+        renderer.drawText(UI_12_FONT_ID, sx + (cell - lw) / 2, sy + (cell - renderer.getLineHeight(UI_12_FONT_ID)) / 2,
+                          l, white, EpdFontFamily::BOLD);
+      }
+    }
+    if (std::find(marks.begin(), marks.end(), sq) != marks.end()) {
+      const int dot = std::max(6, cell / 5);
+      renderer.fillRoundedRect(sx + (cell - dot) / 2, sy + (cell - dot) / 2, dot, dot, dot / 2,
+                               p != '.' && p >= 'a' ? Color::White : Color::Black);
+    }
+  }
+}
+
 }  // namespace
 
 namespace playui {
@@ -159,11 +208,17 @@ void drawCard(const GfxRenderer& renderer, const mesh::ChatMessage& m, const std
     GameState s;
     mesh::play::replay(ref, plays, s);
     const int h = gameHeight();
+    const bool chess = s.game == mesh::play::Game::Chess;
     renderer.drawRoundedRect(x, y, width, h, 2, 16, true);
-    drawBoard(renderer, s.board, x + PAD + 4, y + PAD + 4, MINI);
+    if (chess) {
+      drawChess(renderer, s.chess, x + PAD + 4, y + PAD + 4, mesh::play::FourInRow::ROWS * MINI / 8,
+                s.playerOf(me()) == 2);
+    } else {
+      drawBoard(renderer, s.board, x + PAD + 4, y + PAD + 4, MINI);
+    }
     const int tx = x + PAD + mesh::play::FourInRow::COLS * MINI + 28;
     const int tw = x + width - PAD - tx;
-    renderer.drawText(UI_12_FONT_ID, tx, y + PAD, "Fire på rad", true, EpdFontFamily::BOLD);
+    renderer.drawText(UI_12_FONT_ID, tx, y + PAD, chess ? "Sjakk" : "Fire på rad", true, EpdFontFamily::BOLD);
     const std::string vs = s.opponent ? nameOf(s.opponent) + " mot " + nameOf(s.challenger)
                                       : nameOf(s.challenger) + " utfordrer";
     renderer.drawText(UI_10_FONT_ID, tx, y + PAD + lineH + 4, renderer.truncatedText(UI_10_FONT_ID, vs.c_str(), tw).c_str());
@@ -172,8 +227,16 @@ void drawCard(const GfxRenderer& renderer, const mesh::ChatMessage& m, const std
       renderer.drawText(UI_12_FONT_ID, tx, ty, l.c_str(), true, EpdFontFamily::BOLD);
       ty += lineH;
     }
-    hits.push_back({x, y, width, h, ref, -1});
+    hits.push_back({x, y, width, h, ref, -1, s.game});
   }
+}
+
+std::unique_ptr<Activity> openGame(GfxRenderer& renderer, MappedInputManager& mappedInput, const uint8_t conversation,
+                                   const Hit& hit) {
+  if (hit.game == mesh::play::Game::Chess) {
+    return std::make_unique<ChessActivity>(renderer, mappedInput, conversation, hit.ref);
+  }
+  return std::make_unique<FourInRowActivity>(renderer, mappedInput, conversation, hit.ref);
 }
 
 }  // namespace playui
@@ -295,6 +358,137 @@ void FourInRowActivity::render(RenderLock&&) {
     }
     const int lw = renderer.getTextWidth(UI_12_FONT_ID, label, EpdFontFamily::BOLD);
     renderer.drawText(UI_12_FONT_ID, (width - lw) / 2, dropY + 20, label, !can, EpdFontFamily::BOLD);
+  }
+  renderer.displayBuffer(HalDisplay::FAST_REFRESH);
+}
+
+// --- Sjakk ---------------------------------------------------------------------
+
+ChessActivity::ChessActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, const uint8_t conversation,
+                             const Ref game)
+    : Activity("Chess", renderer, mappedInput), conversation(conversation), game(game) {}
+
+void ChessActivity::reload() {
+  const auto plays = node().store().load(conversation, 400, mesh::MessageStore::Only::Plays);
+  GameState loaded;
+  const bool found = mesh::play::replay(game, playui::entries(plays), loaded);
+  RenderLock lock(*this);
+  state = loaded;
+  known = found;
+}
+
+void ChessActivity::onEnter() {
+  Activity::onEnter();
+  reload();
+  requestUpdate();
+}
+
+bool ChessActivity::myTurn() const { return known && mesh::play::canMove(state, me()); }
+
+// The challenger plays black; before anyone has moved, an onlooker sees white.
+bool ChessActivity::flipped() const { return state.challenger == me(); }
+
+int ChessActivity::squareAt(const int x, const int y) const {
+  if (x < boardX || y < boardY || x >= boardX + 8 * cell || y >= boardY + 8 * cell) return -1;
+  const int col = (x - boardX) / cell, row = (y - boardY) / cell;
+  const int file = flipped() ? 7 - col : col, rank = flipped() ? row : 7 - row;
+  return rank * 8 + file;
+}
+
+void ChessActivity::send(const std::string& move) {
+  if (node().sendText(conversation, mesh::play::writeMove(game, uint16_t(state.moves() + 1), move))) reload();
+  from = to = -1;
+  sure = false;
+  requestUpdate();
+}
+
+void ChessActivity::loop() {
+  using Button = MappedInputManager::Button;
+  if (mappedInput.wasReleased(Button::Back) || mappedInput.wasHomeGesture()) {
+    activityManager.replaceActivity(std::make_unique<ChatActivity>(renderer, mappedInput, conversation));
+    return;
+  }
+  int x = 0, y = 0;
+  if (mappedInput.wasScreenTapped(x, y)) {
+    const int width = renderer.getScreenWidth();
+    if (y >= buttonY && y < buttonY + 70 && known && !state.winner()) {
+      if (x >= width / 2) {
+        // "Gi opp": a second tap gives the game away.
+        if (sure && state.playerOf(me())) {
+          send("x");
+        } else {
+          sure = true;
+          requestUpdate();
+        }
+      } else if (to >= 0 && myTurn()) {
+        send(mesh::play::Chess::squareName(from) + mesh::play::Chess::squareName(to));
+      }
+      return;
+    }
+    sure = false;
+    const int sq = squareAt(x, y);
+    if (sq >= 0 && myTurn()) {
+      const auto targets = from >= 0 ? state.chess.targets(from) : std::vector<int>{};
+      if (std::find(targets.begin(), targets.end(), sq) != targets.end()) {
+        to = sq;
+      } else if (!state.chess.targets(sq).empty()) {
+        from = sq;
+        to = -1;
+      } else {
+        from = to = -1;
+      }
+    }
+    requestUpdate();
+  }
+  if (node().changes() != shownChanges) {
+    shownChanges = node().changes();
+    reload();
+    requestUpdate();
+  }
+}
+
+void ChessActivity::render(RenderLock&&) {
+  const int width = renderer.getScreenWidth();
+  renderer.clearScreen();
+  int y = meshui::drawTitle(renderer, "Sjakk");
+  if (!known) {
+    renderer.drawCenteredText(UI_12_FONT_ID, y + 60, "Fant ikke spillet");
+    renderer.displayBuffer();
+    return;
+  }
+  const std::string players = "Hvit: " + (state.opponent ? nameOf(state.opponent) : std::string("?")) +
+                              "   Svart: " + nameOf(state.challenger);
+  renderer.drawCenteredText(UI_10_FONT_ID, y + 10, players.c_str());
+  y += 50;
+  renderer.drawCenteredText(UI_12_FONT_ID, y, playui::gameStatus(state).c_str(), true, EpdFontFamily::BOLD);
+  y += 50;
+
+  cell = (width - 28) / 8;
+  boardX = (width - 8 * cell) / 2;
+  boardY = y;
+  const auto marks = from >= 0 ? state.chess.targets(from) : std::vector<int>{};
+  drawChess(renderer, state.chess, boardX, boardY, cell, flipped(), from, marks, to);
+
+  buttonY = boardY + 8 * cell + 24;
+  if (!state.winner()) {
+    const int bw = (width - 3 * 14) / 2;
+    const bool ready = to >= 0 && myTurn();
+    const std::string label = ready ? "Flytt " + mesh::play::Chess::squareName(from) + "-" +
+                                          mesh::play::Chess::squareName(to)
+                                    : !myTurn() ? "Ikke din tur" : from >= 0 ? "Velg hvor" : "Velg en brikke";
+    if (ready) {
+      renderer.fillRoundedRect(14, buttonY, bw, 70, 14, Color::Black);
+    } else {
+      renderer.drawRoundedRect(14, buttonY, bw, 70, 2, 14, true);
+    }
+    int lw = renderer.getTextWidth(UI_12_FONT_ID, label.c_str(), EpdFontFamily::BOLD);
+    renderer.drawText(UI_12_FONT_ID, 14 + (bw - lw) / 2, buttonY + 20, label.c_str(), !ready, EpdFontFamily::BOLD);
+    if (state.playerOf(me())) {
+      const char* giveUp = sure ? "Sikker? Trykk igjen" : "Gi opp";
+      renderer.drawRoundedRect(28 + bw, buttonY, bw, 70, 2, 14, true);
+      lw = renderer.getTextWidth(UI_12_FONT_ID, giveUp, EpdFontFamily::BOLD);
+      renderer.drawText(UI_12_FONT_ID, 28 + bw + (bw - lw) / 2, buttonY + 20, giveUp, true, EpdFontFamily::BOLD);
+    }
   }
   renderer.displayBuffer(HalDisplay::FAST_REFRESH);
 }

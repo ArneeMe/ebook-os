@@ -120,6 +120,9 @@ Polls and Fire på rad:
       piece; both see the same board after each move, also from the phone.
       Four in a line says who won.
 - [ ] The chat list shows "Avstemning: …", "stemte" and "gjorde et trekk".
+- [ ] "+" → Sjakk: the other plays white; a tapped piece shows where it may go,
+      "Flytt" sends it, castling and promotion work, and checkmate ends it.
+      "Gi opp" (tap twice) ends it too. The same game plays from the phone.
 
 Joining (protocol 3: up to 32 members):
 - [ ] `waddle mesh invite Ola` prints a `waddle://join/…` link and how Ola runs it.

@@ -129,13 +129,30 @@ void addPlay(JsonObject o, const mesh::ChatMessage& m, const std::vector<mesh::p
     JsonObject game = o["game"].to<JsonObject>();
     game["status"] = mesh::play::status(s, me, nameOrDu);
     game["canMove"] = mesh::play::canMove(s, me);
-    // Rows from the top, a digit per cell: 0 empty, 1 or 2 the player.
+    game["over"] = s.winner() != 0;
+    game["mine"] = s.playerOf(me) != 0;
     std::string board;
-    for (int r = mesh::play::FourInRow::ROWS - 1; r >= 0; r--) {
-      for (int col = 0; col < mesh::play::FourInRow::COLS; col++) board += char('0' + s.board.cell[r][col]);
+    if (s.game == mesh::play::Game::Chess) {
+      // Rows from the top as the player sees them (black at the bottom when flipped).
+      const bool flipped = s.challenger == me;
+      for (int row = 0; row < 8; row++) {
+        for (int col = 0; col < 8; col++) {
+          board += s.chess.board[(flipped ? row : 7 - row) * 8 + (flipped ? 7 - col : col)];
+        }
+      }
+      game["kind"] = "chess";
+      game["flipped"] = flipped;
+      game["players"] = "Hvit: " + (s.opponent ? nameOrDu(s.opponent) : std::string("?")) + "  Svart: " +
+                        nameOrDu(s.challenger);
+    } else {
+      // Rows from the top, a digit per cell: 0 empty, 1 or 2 the player.
+      for (int r = mesh::play::FourInRow::ROWS - 1; r >= 0; r--) {
+        for (int col = 0; col < mesh::play::FourInRow::COLS; col++) board += char('0' + s.board.cell[r][col]);
+      }
+      game["kind"] = "fourinrow";
+      game["players"] = (s.opponent ? nameOrDu(s.opponent) : std::string("?")) + " mot " + nameOrDu(s.challenger);
     }
     game["board"] = board;
-    game["players"] = (s.opponent ? nameOrDu(s.opponent) : std::string("?")) + " mot " + nameOrDu(s.challenger);
   }
 }
 
@@ -359,25 +376,35 @@ JNIEXPORT jboolean JNICALL Java_me_arnee_waddle_Mesh_vote(JNIEnv*, jclass, jint 
   return node().sendText(uint8_t(conv), mesh::play::writeVote({uint8_t(sender), uint32_t(counter)}, uint8_t(option)));
 }
 
-JNIEXPORT jboolean JNICALL Java_me_arnee_waddle_Mesh_startGame(JNIEnv*, jclass, jint conv) {
+// kind: "chess" or "fourinrow".
+JNIEXPORT jboolean JNICALL Java_me_arnee_waddle_Mesh_startGame(JNIEnv* env, jclass, jint conv, jstring kind) {
   tick();
-  return conv >= 0 && conv < mesh::CONVERSATIONS &&
-         node().sendText(uint8_t(conv), mesh::play::writeGame(mesh::play::Game::FourInRow));
+  const auto game = str(env, kind) == "chess" ? mesh::play::Game::Chess : mesh::play::Game::FourInRow;
+  return conv >= 0 && conv < mesh::CONVERSATIONS && node().sendText(uint8_t(conv), mesh::play::writeGame(game));
 }
 
-// Drops my piece in column col (0-6), when it is my move.
-JNIEXPORT jboolean JNICALL Java_me_arnee_waddle_Mesh_move(JNIEnv*, jclass, jint conv, jint sender, jlong counter,
-                                                            jint col) {
+// My next move in a game: a column "0"-"6" (Fire på rad), "e2e4" (chess) or
+// "x" (give up). Refused when it is not my move or not a legal one.
+JNIEXPORT jboolean JNICALL Java_me_arnee_waddle_Mesh_move(JNIEnv* env, jclass, jint conv, jint sender, jlong counter,
+                                                            jstring move) {
   tick();
   if (conv < 0 || conv >= mesh::CONVERSATIONS) return false;
   const mesh::play::Ref ref{uint8_t(sender), uint32_t(counter)};
   const auto plays = playsOf(uint8_t(conv));
   mesh::play::GameState s;
-  if (!mesh::play::replay(ref, entriesOf(plays), s) || !mesh::play::canMove(s, node().network().me) ||
-      !s.board.canDrop(col)) {
-    return false;
+  const std::string m = str(env, move);
+  const uint8_t me = node().network().me;
+  if (!mesh::play::replay(ref, entriesOf(plays), s) || s.winner()) return false;
+  if (m == "x") {
+    if (!s.playerOf(me)) return false;
+  } else {
+    if (!mesh::play::canMove(s, me)) return false;
+    const bool ok = s.game == mesh::play::Game::Chess ? s.chess.play(m) : m.size() == 1 && s.board.drop(m[0] - '0');
+    if (!ok) return false;
   }
-  return node().sendText(uint8_t(conv), mesh::play::writeMove(ref, uint16_t(s.board.moves + 1), std::string(1, char('0' + col))));
+  // A move was just played on the copy, so its number is the count now.
+  const uint16_t number = uint16_t(m == "x" ? s.moves() + 1 : s.moves());
+  return node().sendText(uint8_t(conv), mesh::play::writeMove(ref, number, m));
 }
 
 }  // extern "C"
