@@ -485,6 +485,48 @@ class StatusPageTests(unittest.TestCase):
         self.assertIn("Ikke tilkoblet", status_page(status))
 
 
+class SuspiciousTests(unittest.TestCase):
+    """Traffic that looks like an attack is written down (and changes nothing)."""
+
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.dir)
+        self.store = Store(os.path.join(self.dir, "mesh.db"))
+        self.server = Server(self.store, NETWORK, ADMIN_SIGN)
+        set_roster(self.store, 1, [(1, "Arne", TOKEN_1), (2, "Kari", "22" * 16)])
+
+    def pos(self, sender, counter):
+        h = P.Header(type=P.POS, network=NETWORK, sender=sender, recipient=P.EVERYONE, counter=counter)
+        return h.pack() + bytes(32)
+
+    def kinds(self):
+        return [n["kind"] for n in self.store.suspicious()[1]]
+
+    def test_a_normal_day_notes_nothing(self):
+        for c in (100, 101, 150):
+            self.server.handle(self.pos(2, c), "lora")
+        self.assertEqual(self.store.suspicious()[0], 0)
+        self.assertIn("Ingenting de siste 7 dagene", status_page(dict(self.server.status(), gateway=dict(GATEWAY))))
+
+    def test_unknown_sender_and_counter_jump(self):
+        self.server.handle(self.pos(2, 100), "lora")
+        self.server.handle(self.pos(2, 0xFFFFFFF0), "lora")
+        self.server.handle(self.pos(7, 1), "lora")
+        self.assertEqual(sorted(self.kinds()), ["teller hopper", "ukjent avsender"])
+        # A flood is one line per 10 minutes, not one per packet.
+        for c in range(5):
+            self.server.handle(self.pos(7, 2 + c), "lora")
+        self.assertEqual(self.store.suspicious()[0], 2)
+        page = status_page(dict(self.server.status(), gateway=dict(GATEWAY)))
+        self.assertIn("teller hopper", page)
+        self.assertIn("nr. 7", page)
+
+    def test_old_notes_are_forgotten(self):
+        self.store.note_suspicious("feil token", None, "fra 1.2.3.4", now=time.time() - 40 * 86400)
+        self.store.note_suspicious("feil token", None, "fra 1.2.3.4")
+        self.assertEqual(self.store.suspicious(days=60)[0], 1)
+
+
 class WebTests(unittest.TestCase):
     def start(self, cert=None, key=None):
         self.dir = tempfile.mkdtemp()
@@ -511,6 +553,7 @@ class WebTests(unittest.TestCase):
         with self.assertRaises(urllib.error.HTTPError) as e:
             self.post(base, P.frame([pkts[0]]), "wrong")
         self.assertEqual(e.exception.code, 401)
+        self.assertEqual(self.mesh.store.suspicious()[1][0]["kind"], "feil token")
 
     def test_unit_cannot_send_as_another(self):
         """Another member's packet in a unit's upload is what it heard over LoRa:

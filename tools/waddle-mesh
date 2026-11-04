@@ -1009,6 +1009,20 @@ def check(args):
         ok, text = unit_health(m["ip"], logs="--logs" in args)
         bad += not ok
         say(f"  {G if ok else R}{'✓' if ok else '✗'}{N} {B}{m['name']}{N} {DIM}{m['ip']}{N}: {text}")
+    pi = load(MESH).get("pi")
+    if pi:
+        try:
+            sus = json.loads(ssh(pi, "curl -sk https://localhost:8443/api/status")).get("suspicious") or {}
+        except (RuntimeError, ValueError) as e:
+            say(f"  {Y}?{N} {B}Pi{N}: could not ask it ({e})")
+        else:
+            if not sus.get("count"):
+                say(f"  {G}✓{N} {B}Pi{N}: nothing suspicious the last 7 days")
+            else:
+                say(f"  {Y}!{N} {B}Pi{N}: {sus['count']} suspicious the last 7 days (status page: Mistenkelig)")
+                for n in sus.get("notes", [])[:5]:
+                    when = time.strftime("%d.%m %H:%M", time.localtime(n["at"]))
+                    say(f"      {DIM}{when}{N} {n['kind']}: {n['detail']}")
     say()
     return 1 if bad else 0
 
