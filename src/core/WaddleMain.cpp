@@ -30,9 +30,9 @@
 #include <cstdarg>
 #include <cstring>
 
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "apps/reader/ReaderSettings.h"
-#include "core/CrossPointState.h"
+#include "core/WaddleState.h"
 #include "core/MappedInputManager.h"
 #include "core/Product.h"
 #include "apps/reader/RecentBooksStore.h"
@@ -49,7 +49,7 @@
 #include "core/util/ScreenshotUtil.h"
 #include "core/util/Timezones.h"
 
-#if CROSSPOINT_VECTOR_FONTS
+#if WADDLE_VECTOR_FONTS
 // Rendering (incl. FreeType TTF rasterization) runs on the Arduino loop task.
 // The default 8 KB stack overflows inside FreeType's FT_Open_Face / variable-font
 // parsing. This runtime override applies even with the prebuilt (dio_opi) core,
@@ -230,11 +230,11 @@ void handleSlideSwitch() {
   appliedAction = SETTINGS.slideSwitchAction;
   appliedOn = on;
   switch (SETTINGS.slideSwitchAction) {
-    case CrossPointSettings::SLIDE_SWITCH_NIGHT_MODE:
+    case WaddleSettings::SLIDE_SWITCH_NIGHT_MODE:
       if ((SETTINGS.screenInverted != 0) == on) return;
       SETTINGS.screenInverted = on ? 1 : 0;
       break;
-    case CrossPointSettings::SLIDE_SWITCH_TOUCH_CONTROLS:
+    case WaddleSettings::SLIDE_SWITCH_TOUCH_CONTROLS:
       if ((READER_SETTINGS.touchReaderControls != ReaderSettings::TOUCH_READER_OFF) == on) return;
       READER_SETTINGS.touchReaderControls = on ? ReaderSettings::TOUCH_READER_ON : ReaderSettings::TOUCH_READER_OFF;
       break;
@@ -340,7 +340,9 @@ const bleturner::Host host{heap,          releaseCaches, deliver, yieldForRadio,
                            holdFullSpeed, log,           nullptr};
 }  // namespace pageturner
 
-constexpr char SLEEP_FRAME_FILE[] = "/.crosspoint/sleep_frame.bin";
+constexpr char SLEEP_FRAME_FILE[] = "/.waddleos/sleep_frame.bin";
+constexpr char DATA_DIR[] = "/.waddleos";
+constexpr char OLD_DATA_DIR[] = "/.crosspoint";  // before 2026-11
 
 static void saveSleepFrameBuffer() {
   HalFile file;
@@ -481,7 +483,7 @@ void setup() {
   product::beginBoard();
 
 #ifdef ENABLE_SERIAL_LOG
-#ifdef CROSSPOINT_WAIT_FOR_USB_SERIAL
+#ifdef WADDLE_WAIT_FOR_USB_SERIAL
   // Development builds preserve reliable early CDC logs; release builds let
   // enumeration proceed asynchronously so users do not pay this startup cost.
   delay(250);
@@ -557,6 +559,10 @@ void setup() {
 
   HalSystem::checkPanic();
 
+  // The data folder had another name before (settings, Wi-Fi, progress,
+  // caches): move it once, so a card from an older build keeps everything.
+  if (!Storage.exists(DATA_DIR) && Storage.exists(OLD_DATA_DIR)) Storage.rename(OLD_DATA_DIR, DATA_DIR);
+
   APP_STATE.loadFromFile();
   const bool isSleepWake = wakeupReason == HalGPIO::WakeupReason::PowerButton;
   const bool isPersistedSleepWake = isSleepWake && !APP_STATE.showBootScreen;
@@ -609,7 +615,7 @@ void setup() {
     case HalGPIO::WakeupReason::PowerButton:
       // With Short Power Button Press = Sleep, a single click wakes on any
       // device; otherwise the button must still be held (ghost-wake debounce).
-      if (!wakeHoldVerified && SETTINGS.shortPwrBtn != CrossPointSettings::SHORT_PWRBTN::SLEEP) {
+      if (!wakeHoldVerified && SETTINGS.shortPwrBtn != WaddleSettings::SHORT_PWRBTN::SLEEP) {
         LOG_DBG("MAIN", "Power-button wake not held through verification, sleeping");
         Storage.prepareForDeepSleep();
         powerManager.startDeepSleep(gpio);
@@ -634,7 +640,7 @@ void setup() {
       break;
   }
 
-  LOG_DBG("MAIN", "Starting CrossPoint version " CROSSPOINT_VERSION);
+  LOG_DBG("MAIN", "Starting WaddleOS version " WADDLE_VERSION);
 
   // Resolve the single boot-presentation decision. Skipping the splash also
   // skips the panel-clearing pass and the X3 initial-full-sync arming (see
@@ -746,7 +752,7 @@ void loop() {
   static unsigned long lastMemPrint = 0;
 
   update_trial::tick();
-  gpio.setSharedConfirmPowerShortPressEmitsPower(SETTINGS.shortPwrBtn == CrossPointSettings::SHORT_PWRBTN::SLEEP);
+  gpio.setSharedConfirmPowerShortPressEmitsPower(SETTINGS.shortPwrBtn == WaddleSettings::SHORT_PWRBTN::SLEEP);
   mappedInputManager.update();
 
   // Bluetooth page turner, before the USB drive's early return: a card handed to USB stops the radio
@@ -875,7 +881,7 @@ void loop() {
   // A single X4 Pro power click becomes Confirm only after the frontlight
   // double-click window expires without a second click.
   mappedInputManager.setPowerConfirmClickFrame(false);
-  if (SETTINGS.shortPwrBtn == CrossPointSettings::SHORT_PWRBTN::PWR_CONFIRM && x4ProDoubleClickPwrLight) {
+  if (SETTINGS.shortPwrBtn == WaddleSettings::SHORT_PWRBTN::PWR_CONFIRM && x4ProDoubleClickPwrLight) {
     if (lastX4ProPowerClickAt != 0 && millis() - lastX4ProPowerClickAt > X4PRO_POWER_DOUBLE_CLICK_MS) {
       lastX4ProPowerClickAt = 0;
       mappedInputManager.setPowerConfirmClickFrame(true);
@@ -894,7 +900,7 @@ void loop() {
   // Same deferral for SLEEP: getPowerButtonDuration() drops to 10ms so a quick
   // tap sleeps the device, which otherwise fires on button-down and never lets
   // a second click land. Sleep only once the double-click window has passed.
-  if (SETTINGS.shortPwrBtn == CrossPointSettings::SHORT_PWRBTN::SLEEP && x4ProDoubleClickPwrLight &&
+  if (SETTINGS.shortPwrBtn == WaddleSettings::SHORT_PWRBTN::SLEEP && x4ProDoubleClickPwrLight &&
       lastX4ProPowerClickAt != 0 && millis() - lastX4ProPowerClickAt > X4PRO_POWER_DOUBLE_CLICK_MS) {
     lastX4ProPowerClickAt = 0;
     enterDeepSleep();
@@ -920,7 +926,7 @@ void loop() {
   // double-click candidate — let it be released and evaluated above instead
   // of sleeping on button-down.
   const bool x4ProAwaitingClickWindow = x4ProDoubleClickPwrLight &&
-                                        SETTINGS.shortPwrBtn == CrossPointSettings::SHORT_PWRBTN::SLEEP &&
+                                        SETTINGS.shortPwrBtn == WaddleSettings::SHORT_PWRBTN::SLEEP &&
                                         gpio.getPowerButtonHeldTime() <= X4PRO_POWER_CLICK_MAX_HOLD_MS;
 
   if (!x4ProAwaitingClickWindow && powerReleasedSinceWake && millis() >= allowSleepAt &&
@@ -941,7 +947,7 @@ void loop() {
     toggleFrontlight();
   }
   if (mappedInputManager.homeButtonAction() == HomeButtonAction::Refresh ||
-      (SETTINGS.shortPwrBtn == CrossPointSettings::SHORT_PWRBTN::FORCE_REFRESH &&
+      (SETTINGS.shortPwrBtn == WaddleSettings::SHORT_PWRBTN::FORCE_REFRESH &&
        mappedInputManager.wasReleased(MappedInputManager::Button::Power))) {
     LOG_DBG("MAIN", "Manual screen refresh triggered");
     if (!activityManager.handleForcedRefresh()) {

@@ -2,7 +2,7 @@
 
 #include <I18n.h>
 
-#include "CrossPointSettings.h"
+#include "WaddleSettings.h"
 
 namespace home_button {
 inline constexpr StrId ACTION_LABELS[] = {StrId::STR_HOME_SHORTCUT,
@@ -20,12 +20,12 @@ inline constexpr StrId ACTION_LABELS[] = {StrId::STR_HOME_SHORTCUT,
 static_assert(sizeof(ACTION_LABELS) / sizeof(ACTION_LABELS[0]) == static_cast<unsigned>(HomeButtonAction::Count));
 inline constexpr StrId GESTURE_LABELS[] = {StrId::STR_HOME_BUTTON_TAP, StrId::STR_HOME_BUTTON_DOUBLE_TAP,
                                            StrId::STR_HOME_BUTTON_LONG_PRESS};
-inline constexpr uint8_t CrossPointSettings::* FIELDS[] = {&CrossPointSettings::homeButtonTapAction,
-                                                           &CrossPointSettings::homeButtonDoubleTapAction,
-                                                           &CrossPointSettings::homeButtonLongPressAction};
+inline constexpr uint8_t WaddleSettings::* FIELDS[] = {&WaddleSettings::homeButtonTapAction,
+                                                           &WaddleSettings::homeButtonDoubleTapAction,
+                                                           &WaddleSettings::homeButtonLongPressAction};
 inline constexpr const char* KEYS[] = {"homeButtonTapAction", "homeButtonDoubleTapAction", "homeButtonLongPressAction"};
 inline bool isSetting(const uint8_t* value) {
-  const CrossPointSettings& s = SETTINGS;
+  const WaddleSettings& s = SETTINGS;
   return value == &(s.*FIELDS[0]) || value == &(s.*FIELDS[1]) || value == &(s.*FIELDS[2]);
 }
 }  // namespace home_button

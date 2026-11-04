@@ -8,7 +8,7 @@
 // the correct wall time year-round from a UTC-keeping RTC — the old biased
 // quarter-hour UTC offset could not represent DST at all.
 //
-// APPEND ONLY: CrossPointSettings::clockTimezone persists an index into this
+// APPEND ONLY: WaddleSettings::clockTimezone persists an index into this
 // table, so reordering or removing entries retargets users' saved zones.
 struct TimezoneInfo {
   const char* name;     // shown in the picker; city/region names stay untranslated

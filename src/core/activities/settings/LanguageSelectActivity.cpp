@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <iterator>
 
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "I18nKeys.h"
 #include "core/MappedInputManager.h"
 #include "core/components/UITheme.h"

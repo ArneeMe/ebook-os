@@ -1,4 +1,4 @@
-#include "CrossPointWebServer.h"
+#include "WaddleWebServer.h"
 #include "apps/reader/ReaderSettings.h"
 
 #include <ArduinoJson.h>
@@ -34,7 +34,7 @@
 
 #include "apps/reader/ClippingStore.h"
 #include "core/waddle/WaddleVersion.h"
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "ProtectedPaths.h"
 #include "core/SdCardFontSystem.h"
 #include "core/SettingsList.h"
@@ -44,7 +44,7 @@
 #include "core/network/html/FilesPageHtml.generated.h"
 #include "core/network/html/HomePageHtml.generated.h"
 #include "core/network/html/SettingsPageHtml.generated.h"
-#include "core/network/html/assets/crosspoint_iconSvg.generated.h"
+#include "core/network/html/assets/waddle_iconSvg.generated.h"
 #include "core/network/html/assets/iconsSvg.generated.h"
 #include "core/network/html/assets/webCss.generated.h"
 #include "core/network/html/js/jszip_minJs.generated.h"
@@ -65,9 +65,9 @@ namespace {
 // For JSON POSTs, that includes the complete "plain" body. Expose a narrowly
 // scoped release operation so large request bodies do not remain resident
 // between requests, and so outbound TLS can reuse that memory immediately.
-class CrossPointHttpServer final : public WebServer {
+class WaddleHttpServer final : public WebServer {
  public:
-  explicit CrossPointHttpServer(uint16_t port) : WebServer(port) {}
+  explicit WaddleHttpServer(uint16_t port) : WebServer(port) {}
 
   void releaseRequestArguments() {
     if (_currentArgs) {
@@ -85,7 +85,7 @@ class CrossPointHttpServer final : public WebServer {
 };
 
 void releaseRequestArguments(WebServer* server) {
-  static_cast<CrossPointHttpServer*>(server)->releaseRequestArguments();
+  static_cast<WaddleHttpServer*>(server)->releaseRequestArguments();
 }
 
 // Folders/files to hide from the web interface file browser
@@ -96,7 +96,7 @@ constexpr uint16_t UDP_PORTS[] = {54982, 48123, 39001, 44044, 59678};
 constexpr uint16_t LOCAL_UDP_PORT = 8134;
 
 // Static pointer for WebSocket callback (WebSocketsServer requires C-style callback)
-CrossPointWebServer* wsInstance = nullptr;
+WaddleWebServer* wsInstance = nullptr;
 
 // WebSocket upload state
 HalFile wsUploadFile;
@@ -148,11 +148,11 @@ bool isProtectedItemName(const String& name) {
 // - HomePageHtml (from html/HomePage.html)
 // - FilesPageHeaderHtml (from html/FilesPageHeader.html)
 // - FilesPageFooterHtml (from html/FilesPageFooter.html)
-CrossPointWebServer::CrossPointWebServer() {}
+WaddleWebServer::WaddleWebServer() {}
 
-CrossPointWebServer::~CrossPointWebServer() { stop(); }
+WaddleWebServer::~WaddleWebServer() { stop(); }
 
-void CrossPointWebServer::begin() {
+void WaddleWebServer::begin() {
   if (running) {
     LOG_DBG("WEB", "Web server already running");
     return;
@@ -175,7 +175,7 @@ void CrossPointWebServer::begin() {
   LOG_DBG("WEB", "Network mode: %s", apMode ? "AP" : "STA");
 
   LOG_DBG("WEB", "Creating web server on port %d...", port);
-  server.reset(new CrossPointHttpServer(port));
+  server.reset(new WaddleHttpServer(port));
 
   // Disable WiFi sleep to improve responsiveness and prevent 'unreachable' errors.
   // This is critical for reliable web server operation on ESP32.
@@ -206,8 +206,8 @@ void CrossPointWebServer::begin() {
              [this] { sendStaticContent(server.get(), webCss, sizeof(webCss), webCssETag, "text/css"); });
   server->on("/assets/icons.svg", HTTP_GET,
              [this] { sendStaticContent(server.get(), iconsSvg, sizeof(iconsSvg), iconsSvgETag, "image/svg+xml"); });
-  server->on("/assets/crosspoint-icon.svg", HTTP_GET, [this] {
-    sendStaticContent(server.get(), crosspoint_iconSvg, sizeof(crosspoint_iconSvg), crosspoint_iconSvgETag,
+  server->on("/assets/waddle-icon.svg", HTTP_GET, [this] {
+    sendStaticContent(server.get(), waddle_iconSvg, sizeof(waddle_iconSvg), waddle_iconSvgETag,
                       "image/svg+xml");
   });
 
@@ -262,7 +262,7 @@ void CrossPointWebServer::begin() {
   // Start WebSocket server for fast binary uploads
   LOG_DBG("WEB", "Starting WebSocket server on port %d...", wsPort);
   wsServer.reset(new WebSocketsServer(wsPort));
-  wsInstance = const_cast<CrossPointWebServer*>(this);
+  wsInstance = const_cast<WaddleWebServer*>(this);
   wsServer->begin();
   wsServer->onEvent(wsEventCallback);
   LOG_DBG("WEB", "WebSocket server started");
@@ -286,7 +286,7 @@ void CrossPointWebServer::begin() {
   LOG_DBG("WEB", "[MEM] Free heap after server.begin(): %d bytes", ESP.getFreeHeap());
 }
 
-void CrossPointWebServer::suspendTransferServices() {
+void WaddleWebServer::suspendTransferServices() {
   // Leave the WebSocket server alone mid-upload; killing it would abort the
   // transfer. The fetch just stalls that upload until it completes.
   if (wsServer && !wsUploadInProgress) {
@@ -298,7 +298,7 @@ void CrossPointWebServer::suspendTransferServices() {
           (unsigned)ESP.getMaxAllocHeap());
 }
 
-void CrossPointWebServer::resumeTransferServices() {
+void WaddleWebServer::resumeTransferServices() {
   if (!running) return;
   if (!wsServer) {
     auto* ws = new (std::nothrow) WebSocketsServer(wsPort);
@@ -315,14 +315,14 @@ void CrossPointWebServer::resumeTransferServices() {
           (unsigned)ESP.getMaxAllocHeap());
 }
 
-bool CrossPointWebServer::dropUploadIfCancelled() const {
+bool WaddleWebServer::dropUploadIfCancelled() const {
   if (!uploadCancelCheck || !uploadCancelCheck()) return false;
   // WebServer's next read of the body then fails and it raises UPLOAD_FILE_ABORTED.
   server->client().stop();
   return true;
 }
 
-void CrossPointWebServer::abortWsUpload(const char* tag) {
+void WaddleWebServer::abortWsUpload(const char* tag) {
   // Explicit close() required: file-scope global persists beyond function scope
   wsUploadFile.close();
   String filePath = wsUploadPath;
@@ -338,7 +338,7 @@ void CrossPointWebServer::abortWsUpload(const char* tag) {
   wsLastProgressSent = 0;
 }
 
-void CrossPointWebServer::stop() {
+void WaddleWebServer::stop() {
   if (!running || !server) {
     LOG_DBG("WEB", "stop() called but already stopped (running=%d, server=%p)", running, server.get());
     return;
@@ -386,7 +386,7 @@ void CrossPointWebServer::stop() {
   LOG_DBG("WEB", "[MEM] Free heap final: %d bytes", ESP.getFreeHeap());
 }
 
-void CrossPointWebServer::handleClient() {
+void WaddleWebServer::handleClient() {
   static unsigned long lastDebugPrint = 0;
 
   // Check running flag FIRST before accessing server
@@ -428,9 +428,9 @@ void CrossPointWebServer::handleClient() {
         if (strcmp(buffer, "hello") == 0) {
           String hostname = WiFi.getHostname();
           if (hostname.isEmpty()) {
-            hostname = "crosspoint";
+            hostname = "reader";
           }
-          String message = "crosspoint (on " + hostname + ");" + String(wsPort);
+          String message = "waddle (on " + hostname + ");" + String(wsPort);
           udp.beginPacket(udp.remoteIP(), udp.remotePort());
           udp.write(reinterpret_cast<const uint8_t*>(message.c_str()), message.length());
           udp.endPacket();
@@ -440,7 +440,7 @@ void CrossPointWebServer::handleClient() {
   }
 }
 
-CrossPointWebServer::WsUploadStatus CrossPointWebServer::getWsUploadStatus() const {
+WaddleWebServer::WsUploadStatus WaddleWebServer::getWsUploadStatus() const {
   WsUploadStatus status;
   status.inProgress = wsUploadInProgress;
   status.received = wsUploadReceived;
@@ -471,17 +471,17 @@ static void sendStaticContent(WebServer* server, const char* data, size_t len, c
   server->send_P(200, contentType, data, len);
 }
 
-void CrossPointWebServer::handleRoot() const {
+void WaddleWebServer::handleRoot() const {
   sendStaticContent(server.get(), HomePageHtml, sizeof(HomePageHtml), HomePageHtmlETag, "text/html");
   LOG_DBG("WEB", "Served root page");
 }
 
-void CrossPointWebServer::handleJszip() const {
+void WaddleWebServer::handleJszip() const {
   sendStaticContent(server.get(), jszip_minJs, jszip_minJsCompressedSize, jszip_minJsETag, "application/javascript");
   LOG_DBG("WEB", "Served jszip.min.js");
 }
 
-void CrossPointWebServer::handleNotFound() const {
+void WaddleWebServer::handleNotFound() const {
   // CORS preflight: routes are registered per-method, so OPTIONS requests land
   // here. The Access-Control-Allow-* headers are added by enableCORS().
   if (server->method() == HTTP_OPTIONS) {
@@ -503,7 +503,7 @@ void CrossPointWebServer::handleNotFound() const {
   server->send(404, "text/plain", message);
 }
 
-void CrossPointWebServer::handleStatus() const {
+void WaddleWebServer::handleStatus() const {
   // Get correct IP based on AP vs STA mode
   const String ipAddr = apMode ? WiFi.softAPIP().toString() : WiFi.localIP().toString();
 
@@ -527,7 +527,7 @@ void CrossPointWebServer::handleStatus() const {
   server->send(200, "application/json", response);
 }
 
-void CrossPointWebServer::scanFiles(const char* path, const std::function<void(FileInfo)>& callback) const {
+void WaddleWebServer::scanFiles(const char* path, const std::function<void(FileInfo)>& callback) const {
   HalFile root = Storage.open(path);
   if (!root) {
     LOG_DBG("WEB", "Failed to open directory: %s", path);
@@ -585,13 +585,13 @@ void CrossPointWebServer::scanFiles(const char* path, const std::function<void(F
   root.close();
 }
 
-bool CrossPointWebServer::isEpubFile(const String& filename) const { return FsHelpers::hasEpubExtension(filename); }
+bool WaddleWebServer::isEpubFile(const String& filename) const { return FsHelpers::hasEpubExtension(filename); }
 
-void CrossPointWebServer::handleFileList() const {
+void WaddleWebServer::handleFileList() const {
   sendStaticContent(server.get(), FilesPageHtml, sizeof(FilesPageHtml), FilesPageHtmlETag, "text/html");
 }
 
-void CrossPointWebServer::handleFileListData() const {
+void WaddleWebServer::handleFileListData() const {
   // Get current path from query string (default to root)
   String currentPath = "/";
   if (server->hasArg("path")) {
@@ -633,7 +633,7 @@ void CrossPointWebServer::handleFileListData() const {
   LOG_DBG("WEB", "Served file listing page for path: %s", currentPath.c_str());
 }
 
-void CrossPointWebServer::streamFileToClient(HalFile& file) const {
+void WaddleWebServer::streamFileToClient(HalFile& file) const {
   NetworkClient client = server->client();
   static constexpr size_t CHUNK_SIZE = 4096;
   // Off the stack: the web-server task also runs TLS and SD from this stack.
@@ -662,7 +662,7 @@ void CrossPointWebServer::streamFileToClient(HalFile& file) const {
   client.clear();
 }
 
-void CrossPointWebServer::handleDownload() const {
+void WaddleWebServer::handleDownload() const {
   if (!server->hasArg("path")) {
     server->send(400, "text/plain", "Missing path");
     return;
@@ -725,7 +725,7 @@ static unsigned long uploadStartTime = 0;
 static unsigned long totalWriteTime = 0;
 static size_t writeCount = 0;
 
-static bool flushUploadBuffer(CrossPointWebServer::UploadState& state) {
+static bool flushUploadBuffer(WaddleWebServer::UploadState& state) {
   if (state.bufferPos > 0 && state.file) {
     resetTaskWatchdogIfSubscribed();  // Reset watchdog before potentially slow SD write
     const unsigned long writeStart = millis();
@@ -746,14 +746,14 @@ static bool flushUploadBuffer(CrossPointWebServer::UploadState& state) {
 
 // Drop a partially written upload so a truncated book never lands in the library.
 // The file is new: uploads refuse to overwrite an existing name.
-static void removeUploadedFile(const CrossPointWebServer::UploadState& state) {
+static void removeUploadedFile(const WaddleWebServer::UploadState& state) {
   String filePath = state.path;
   if (!filePath.endsWith("/")) filePath += "/";
   filePath += state.fileName;
   Storage.remove(filePath.c_str());
 }
 
-void CrossPointWebServer::handleUpload(UploadState& state) const {
+void WaddleWebServer::handleUpload(UploadState& state) const {
   static size_t lastLoggedSize = 0;
 
   // Reset watchdog at start of every upload callback - HTTP parsing can be slow
@@ -916,7 +916,7 @@ void CrossPointWebServer::handleUpload(UploadState& state) const {
   }
 }
 
-void CrossPointWebServer::handleUploadPost(UploadState& state) const {
+void WaddleWebServer::handleUploadPost(UploadState& state) const {
   if (state.success) {
     server->send(200, "text/plain", "File uploaded successfully: " + state.fileName);
   } else {
@@ -925,7 +925,7 @@ void CrossPointWebServer::handleUploadPost(UploadState& state) const {
   }
 }
 
-void CrossPointWebServer::handleCreateFolder() const {
+void WaddleWebServer::handleCreateFolder() const {
   // Get folder name from form data
   if (!server->hasArg("name")) {
     server->send(400, "text/plain", "Missing folder name");
@@ -979,7 +979,7 @@ void CrossPointWebServer::handleCreateFolder() const {
   }
 }
 
-void CrossPointWebServer::handleRename() const {
+void WaddleWebServer::handleRename() const {
   if (!server->hasArg("path") || !server->hasArg("name")) {
     server->send(400, "text/plain", "Missing path or new name");
     return;
@@ -1066,7 +1066,7 @@ void CrossPointWebServer::handleRename() const {
   }
 }
 
-void CrossPointWebServer::handleMove() const {
+void WaddleWebServer::handleMove() const {
   if (!server->hasArg("path") || !server->hasArg("dest")) {
     server->send(400, "text/plain", "Missing path or destination");
     return;
@@ -1164,7 +1164,7 @@ void CrossPointWebServer::handleMove() const {
   }
 }
 
-void CrossPointWebServer::handleDelete() const {
+void WaddleWebServer::handleDelete() const {
   // To ensure backwards compatibility, plain `path` is mapped
   // to a single element JSON array.
   bool hasPathArg = server->hasArg("path");
@@ -1280,12 +1280,12 @@ void CrossPointWebServer::handleDelete() const {
   }
 }
 
-void CrossPointWebServer::handleSettingsPage() const {
+void WaddleWebServer::handleSettingsPage() const {
   sendStaticContent(server.get(), SettingsPageHtml, sizeof(SettingsPageHtml), SettingsPageHtmlETag, "text/html");
   LOG_DBG("WEB", "Served settings page");
 }
 
-void CrossPointWebServer::handleGetSettings() const {
+void WaddleWebServer::handleGetSettings() const {
   // The reader adds SD-resident font families and dictionaries to the list.
   const auto& settings = getSettingsList();
 
@@ -1388,7 +1388,7 @@ void CrossPointWebServer::handleGetSettings() const {
   LOG_DBG("WEB", "Served settings API");
 }
 
-void CrossPointWebServer::handlePostSettings() {
+void WaddleWebServer::handlePostSettings() {
   if (!server->hasArg("plain")) {
     server->send(400, "text/plain", "Missing JSON body");
     return;
@@ -1467,7 +1467,7 @@ void CrossPointWebServer::handlePostSettings() {
 
 // ---- Wi-Fi Credentials API ----
 
-void CrossPointWebServer::handleGetWifiNetworks() const {
+void WaddleWebServer::handleGetWifiNetworks() const {
   const auto credentials = WIFI_STORE.getCredentialSummaries();
 
   // Stream JSON array incrementally to avoid allocating the full response in memory
@@ -1501,7 +1501,7 @@ void CrossPointWebServer::handleGetWifiNetworks() const {
   LOG_DBG("WEB", "Served Wi-Fi credentials API (%zu network(s))", credentials.size());
 }
 
-void CrossPointWebServer::handlePostWifiNetwork() {
+void WaddleWebServer::handlePostWifiNetwork() {
   if (!server->hasArg("plain")) {
     server->send(400, "text/plain", "Missing JSON body");
     return;
@@ -1568,7 +1568,7 @@ void CrossPointWebServer::handlePostWifiNetwork() {
 }
 
 // Uses POST (not HTTP DELETE) because ESP32 WebServer doesn't support DELETE with body.
-void CrossPointWebServer::handleDeleteWifiNetwork() {
+void WaddleWebServer::handleDeleteWifiNetwork() {
   if (!server->hasArg("plain")) {
     server->send(400, "text/plain", "Missing JSON body");
     return;
@@ -1608,7 +1608,7 @@ void CrossPointWebServer::handleDeleteWifiNetwork() {
 }
 
 
-void CrossPointWebServer::sendJson(const JsonDocument& doc) const {
+void WaddleWebServer::sendJson(const JsonDocument& doc) const {
   String out;
   if (!out.reserve(measureJson(doc))) {
     LOG_ERR("WEB", "OOM: JSON response");
@@ -1621,7 +1621,7 @@ void CrossPointWebServer::sendJson(const JsonDocument& doc) const {
 
 
 // WebSocket callback trampoline
-void CrossPointWebServer::wsEventCallback(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
+void WaddleWebServer::wsEventCallback(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
   if (wsInstance) {
     wsInstance->onWebSocketEvent(num, type, payload, length);
   }
@@ -1633,7 +1633,7 @@ void CrossPointWebServer::wsEventCallback(uint8_t num, WStype_t type, uint8_t* p
 //   2. Client sends BINARY messages with file data chunks
 //   3. Server sends TEXT "PROGRESS:<received>:<total>" after each chunk
 //   4. Server sends TEXT "DONE" or "ERROR:<message>" when complete
-void CrossPointWebServer::onWebSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
+void WaddleWebServer::onWebSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
   switch (type) {
     case WStype_DISCONNECTED:
       LOG_DBG("WS", "Client %u disconnected", num);

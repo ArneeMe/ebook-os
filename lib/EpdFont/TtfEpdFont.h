@@ -1,9 +1,9 @@
 #pragma once
 
-// CrossPoint <- FreeInkFont adapter (FreeType, 4-style, lazy, streaming).
+// Waddle <- FreeInkFont adapter (FreeType, 4-style, lazy, streaming).
 //
 // Renders one or more TrueType/OpenType files — including OpenType VARIABLE
-// fonts — as a CrossPoint EpdFontFamily with regular / bold / italic /
+// fonts — as a Waddle EpdFontFamily with regular / bold / italic /
 // bold-italic via the FreeInkFont FreeType backend.
 //
 // STYLE SOURCES. A family can be built from up to four source files, one per
@@ -40,7 +40,7 @@
 
 #include "VectorFontSupport.h"
 
-#if CROSSPOINT_VECTOR_FONTS
+#if WADDLE_VECTOR_FONTS
 
 #include <FontPsram.h>
 #include <FtFont.h>
@@ -158,4 +158,4 @@ class TtfEpdFont {
   bool evictionLocked_ = false;
 };
 
-#endif  // CROSSPOINT_VECTOR_FONTS
+#endif  // WADDLE_VECTOR_FONTS

@@ -7,23 +7,23 @@ namespace {
 
 // Core's own rows: the settings every WaddleOS device has.
 void forEachCoreSetting(SettingVisitor visit, void* context) {
-  CrossPointSettings& s = SETTINGS;
+  WaddleSettings& s = SETTINGS;
   // Load and save walk this list, so every condition here must be fixed before
   // settings load. Runtime probes belong in getSettingsList().
 
   // Enum settings are persisted as numeric values. Assign these labels by enum
   // value so a reordered menu or enum cannot silently swap their behavior.
   static constexpr auto SLEEP_SCREEN_VALUES = [] {
-    std::array<StrId, CrossPointSettings::SLEEP_SCREEN_MODE_COUNT> values{};
-    values[CrossPointSettings::DARK] = StrId::STR_DARK;
-    values[CrossPointSettings::LIGHT] = StrId::STR_LIGHT;
-    values[CrossPointSettings::CUSTOM] = StrId::STR_CUSTOM;
-    values[CrossPointSettings::COVER] = StrId::STR_COVER;
-    values[CrossPointSettings::COVER_CUSTOM] = StrId::STR_COVER_CUSTOM;
-    values[CrossPointSettings::BLANK] = StrId::STR_NONE_OPT;
-    values[CrossPointSettings::QUICK_RESUME] = StrId::STR_QUICK_RESUME;
-    values[CrossPointSettings::TRANSPARENT_CUSTOM] = StrId::STR_TRANSPARENT;
-    values[CrossPointSettings::COVER_TRANSPARENT] = StrId::STR_COVER_TRANSPARENT;
+    std::array<StrId, WaddleSettings::SLEEP_SCREEN_MODE_COUNT> values{};
+    values[WaddleSettings::DARK] = StrId::STR_DARK;
+    values[WaddleSettings::LIGHT] = StrId::STR_LIGHT;
+    values[WaddleSettings::CUSTOM] = StrId::STR_CUSTOM;
+    values[WaddleSettings::COVER] = StrId::STR_COVER;
+    values[WaddleSettings::COVER_CUSTOM] = StrId::STR_COVER_CUSTOM;
+    values[WaddleSettings::BLANK] = StrId::STR_NONE_OPT;
+    values[WaddleSettings::QUICK_RESUME] = StrId::STR_QUICK_RESUME;
+    values[WaddleSettings::TRANSPARENT_CUSTOM] = StrId::STR_TRANSPARENT;
+    values[WaddleSettings::COVER_TRANSPARENT] = StrId::STR_COVER_TRANSPARENT;
     return values;
   }();
   const auto emit = [visit, context](auto&& info) { visit(context, info); };
@@ -79,7 +79,7 @@ void forEachCoreSetting(SettingVisitor visit, void* context) {
   // --- System ---
   emit(SettingInfo::Value(
       StrId::STR_TIME_TO_SLEEP, &s.sleepTimeoutMinutes,
-      {CrossPointSettings::MIN_SLEEP_TIMEOUT_MINUTES, CrossPointSettings::MAX_SLEEP_TIMEOUT_MINUTES, 1},
+      {WaddleSettings::MIN_SLEEP_TIMEOUT_MINUTES, WaddleSettings::MAX_SLEEP_TIMEOUT_MINUTES, 1},
       "sleepTimeoutMinutes", StrId::STR_CAT_SYSTEM));
 
   // Frontlight quick-panel state: persisted and web-exposed, but hidden

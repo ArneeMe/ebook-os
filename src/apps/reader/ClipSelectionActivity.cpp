@@ -14,7 +14,7 @@
 #include <cstdlib>
 
 #include "ClippingStore.h"
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "core/MappedInputManager.h"
 #include "core/activities/ActivityResult.h"
 #include "apps/reader/clippings/ClippingText.h"

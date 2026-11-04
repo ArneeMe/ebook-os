@@ -3,9 +3,9 @@
 #include <cstdint>
 
 /**
- * CrossPoint position representation.
+ * Waddle position representation.
  */
-struct CrossPointPosition {
+struct WaddlePosition {
   int spineIndex;                  // Current spine item (chapter) index
   int pageNumber;                  // Current page within the spine item
   int totalPages;                  // Total pages in the current spine item

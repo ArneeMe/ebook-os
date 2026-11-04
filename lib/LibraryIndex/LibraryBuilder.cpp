@@ -20,12 +20,12 @@
 namespace library {
 namespace {
 
-constexpr char INDEX_PATH[] = "/.crosspoint/library.idx";
-constexpr char NEW_PATH[] = "/.crosspoint/library.new";
-constexpr char BACKUP_PATH[] = "/.crosspoint/library.bak";
-constexpr char STAGE_PATH[] = "/.crosspoint/library.stage";
-constexpr char DIRTY_PATH[] = "/.crosspoint/library.dirty";
-constexpr char CACHE_DIR[] = "/.crosspoint";
+constexpr char INDEX_PATH[] = "/.waddleos/library.idx";
+constexpr char NEW_PATH[] = "/.waddleos/library.new";
+constexpr char BACKUP_PATH[] = "/.waddleos/library.bak";
+constexpr char STAGE_PATH[] = "/.waddleos/library.stage";
+constexpr char DIRTY_PATH[] = "/.waddleos/library.dirty";
+constexpr char CACHE_DIR[] = "/.waddleos";
 // Sticky fallback when the marker could not be persisted (card unavailable at
 // write time): callers must still see the index as stale until a rebuild clears it.
 bool dirtyInMemory = false;

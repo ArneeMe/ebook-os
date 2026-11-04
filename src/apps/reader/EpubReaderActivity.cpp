@@ -29,8 +29,8 @@
 #include "ChapterBuildGate.h"
 #include "ClipSelectionActivity.h"
 #include "ClippingStore.h"
-#include "core/CrossPointSettings.h"
-#include "core/CrossPointState.h"
+#include "core/WaddleSettings.h"
+#include "core/WaddleState.h"
 #include "DictionaryWordSelectActivity.h"
 #include "EpubReaderBookmarksActivity.h"
 #include "EpubReaderChapterSelectionActivity.h"
@@ -192,7 +192,7 @@ void moveFinishedBookToReadFolder(const std::string& srcPath, const std::string&
     return;
   }
 
-  const std::string newCachePath = "/.crosspoint/epub_" + std::to_string(std::hash<std::string>{}(dstPath));
+  const std::string newCachePath = "/.waddleos/epub_" + std::to_string(std::hash<std::string>{}(dstPath));
   bool cacheMoved = false;
   if (!oldCachePath.empty() && Storage.exists(oldCachePath.c_str())) {
     cacheMoved = Storage.rename(oldCachePath.c_str(), newCachePath.c_str());
@@ -239,7 +239,7 @@ EpubReaderActivity::~EpubReaderActivity() {
 }
 
 bool EpubReaderActivity::loadBook() {
-  auto loadedEpub = makeUniqueNoThrow<Epub>(bookPath, "/.crosspoint");
+  auto loadedEpub = makeUniqueNoThrow<Epub>(bookPath, "/.waddleos");
   if (!loadedEpub) {
     LOG_ERR("ERS", "Failed to allocate EPUB object");
     return false;
@@ -940,7 +940,7 @@ void EpubReaderActivity::loop() {
     return;
   }
 
-  if (SETTINGS.shortPwrBtn == CrossPointSettings::SHORT_PWRBTN::CREATE_CLIPPING &&
+  if (SETTINGS.shortPwrBtn == WaddleSettings::SHORT_PWRBTN::CREATE_CLIPPING &&
       mappedInput.wasReleased(MappedInputManager::Button::Power) &&
       !mappedInput.wasReleased(MappedInputManager::Button::Down)) {
     startClipSelection();
@@ -948,7 +948,7 @@ void EpubReaderActivity::loop() {
   }
 
   if ((!endOfBookMenuOpen && mappedInput.homeButtonAction() == HomeButtonAction::Footnotes) ||
-      (SETTINGS.shortPwrBtn == CrossPointSettings::SHORT_PWRBTN::FOOTNOTES &&
+      (SETTINGS.shortPwrBtn == WaddleSettings::SHORT_PWRBTN::FOOTNOTES &&
        mappedInput.wasReleased(MappedInputManager::Button::Power) &&
        !mappedInput.wasReleased(MappedInputManager::Button::Down))) {
     if (footnoteDepth > 0) {
@@ -1099,8 +1099,8 @@ void EpubReaderActivity::applyProgressChange(const ProgressChangeResult& sync) {
 
   if (!cachedPageMatchesActiveSection && sync.hasSavedProgress) {
     const int totalPages = section ? section->estimatedTotalPages() : cachedChapterTotalPageCount;
-    CrossPointPosition fallback =
-        ProgressMapper::toCrossPoint(epub, {sync.xpath, sync.percentage}, renderer, currentSpineIndex, totalPages);
+    WaddlePosition fallback =
+        ProgressMapper::toWaddle(epub, {sync.xpath, sync.percentage}, renderer, currentSpineIndex, totalPages);
     targetSpineIndex = fallback.spineIndex;
     targetPage = fallback.pageNumber;
   }
@@ -3371,7 +3371,7 @@ int EpubReaderActivity::getProgressBasisPoints() const {
   return std::clamp(basisPoints, 0, 10000);
 }
 
-CrossPointPosition EpubReaderActivity::getCurrentPosition() const {
+WaddlePosition EpubReaderActivity::getCurrentPosition() const {
   const int currentPage = section ? section->currentPage : nextPageNumber;
   const int totalPages = section ? section->estimatedTotalPages() : cachedChapterTotalPageCount;
   std::optional<uint16_t> paragraphIndex;
@@ -3383,7 +3383,7 @@ CrossPointPosition EpubReaderActivity::getCurrentPosition() const {
     }
   }
 
-  CrossPointPosition localPos = {currentSpineIndex, currentPage, totalPages};
+  WaddlePosition localPos = {currentSpineIndex, currentPage, totalPages};
   localPos.hasResolvedSpineIndex = true;
   localPos.hasMappedPage = true;
   if (section && currentPage >= 0 && currentPage < section->pageCount) {

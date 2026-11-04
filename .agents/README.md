@@ -1,4 +1,4 @@
-# CrossPoint Reader agent instructions
+# WaddleOS agent instructions
 
 The root `AGENTS.md` is the always-loaded policy and router. Detailed repository facts live in `rules/`; reusable procedures and review axes live in `skills/`.
 

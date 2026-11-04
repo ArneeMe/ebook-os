@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <string_view>
 
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 
 namespace {
 constexpr size_t NAME_BUFFER_SIZE = 500;

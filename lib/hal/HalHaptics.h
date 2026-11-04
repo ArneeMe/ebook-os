@@ -4,7 +4,7 @@
 
 #include <cstdint>
 
-#if FREEINK_CAP_HAPTIC && !CROSSPOINT_EMULATED
+#if FREEINK_CAP_HAPTIC && !WADDLE_EMULATED
 #include <HapticManager.h>
 #endif
 
@@ -18,7 +18,7 @@ class HalHaptics {
 
  public:
   static void longPress(bool enabled, uint8_t intensity) {
-#if FREEINK_CAP_HAPTIC && !CROSSPOINT_EMULATED
+#if FREEINK_CAP_HAPTIC && !WADDLE_EMULATED
     if (!enabled) return;
     auto& motor = HapticManager::getInstance();
     motor.setEnabled(true);
@@ -34,7 +34,7 @@ class HalHaptics {
   }
 
   static void feedback(bool enabled, bool pressed, uint8_t intensity) {
-#if FREEINK_CAP_HAPTIC && !CROSSPOINT_EMULATED
+#if FREEINK_CAP_HAPTIC && !WADDLE_EMULATED
     auto& motor = HapticManager::getInstance();
     motor.setEnabled(enabled);
     // Initialize lazily: Off does not allocate a timer or attach PWM.

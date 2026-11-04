@@ -2,13 +2,13 @@
 
 #include <HalHaptics.h>
 
-#include "CrossPointSettings.h"
+#include "WaddleSettings.h"
 
 // Call only after the application accepts an interactive touch action.
 // Sampling a contact or classifying a gesture must remain silent.
 namespace haptic_feedback {
 inline void touchAction(bool longPress = false) {
-  const bool enabled = SETTINGS.vibration != CrossPointSettings::VIBRATION_OFF;
+  const bool enabled = SETTINGS.vibration != WaddleSettings::VIBRATION_OFF;
   if (longPress) {
     HalHaptics::longPress(enabled, SETTINGS.hapticIntensity);
   } else {

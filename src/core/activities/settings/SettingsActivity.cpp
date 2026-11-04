@@ -19,7 +19,7 @@
 #include "ButtonRemapActivity.h"
 #include "ClearCacheActivity.h"
 #include "ClockSettingsActivity.h"
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "HomeButtonSettingsActivity.h"
 #include "LanguageSelectActivity.h"
 #include "core/MappedInputManager.h"
@@ -53,7 +53,7 @@ bool showOnDevice(const SettingInfo& setting) {
   // Merged into the Text Settings screen.
   if (setting.category == StrId::STR_CAT_READER && setting.inTextSettings) return false;
   if (setting.valuePtr == &READER_SETTINGS.pwrBtnFootnoteBack &&
-      SETTINGS.shortPwrBtn != CrossPointSettings::SHORT_PWRBTN::FOOTNOTES) {
+      SETTINGS.shortPwrBtn != WaddleSettings::SHORT_PWRBTN::FOOTNOTES) {
     return false;
   }
   return true;
@@ -346,7 +346,7 @@ void SettingsActivity::openSleepTimeoutPicker() {
   startActivityForResult(
       std::make_unique<IntervalSelectionActivity>(
           renderer, mappedInput, "SleepTimeoutInterval", StrId::STR_TIME_TO_SLEEP, SETTINGS.sleepTimeoutMinutes,
-          CrossPointSettings::MIN_SLEEP_TIMEOUT_MINUTES, CrossPointSettings::MAX_SLEEP_TIMEOUT_MINUTES, 1, 5,
+          WaddleSettings::MIN_SLEEP_TIMEOUT_MINUTES, WaddleSettings::MAX_SLEEP_TIMEOUT_MINUTES, 1, 5,
           StrId::STR_SLEEP_TIMER_VALUE_FORMAT, false, StrId::STR_SLEEP_NEVER),
       [this](const ActivityResult& result) {
         if (!result.isCancelled) {
@@ -380,7 +380,7 @@ std::string SettingsActivity::settingValueText(const SettingInfo& setting) {
   }
   if (setting.type == SettingType::VALUE && setting.valuePtr != nullptr) {
     if (setting.nameId == StrId::STR_TIME_TO_SLEEP) {
-      if (SETTINGS.sleepTimeoutMinutes >= CrossPointSettings::SLEEP_TIMEOUT_NEVER_MINUTES) {
+      if (SETTINGS.sleepTimeoutMinutes >= WaddleSettings::SLEEP_TIMEOUT_NEVER_MINUTES) {
         return tr(STR_SLEEP_NEVER);
       }
       char valueBuffer[32];

@@ -1,4 +1,4 @@
-/* CrossPoint only needs miniz's low-level streaming inflate (tinfl). The
+/* Waddle only needs miniz's low-level streaming inflate (tinfl). The
  * archive, deflate, stdio, and zlib-compatibility layers are compiled out so
  * the vendored library stays small and never touches the filesystem or clock.
  * Include this header instead of <miniz.h> so every translation unit sees the
@@ -18,15 +18,15 @@
 // firmware silently binds to the ROM's 2021 build (TINFL_LESS_MEMORY, a
 // different tinfl_decompressor layout) and corrupts inflate state on real
 // data. Rename so the linker can never capture them. The prefix is
-// crosspoint_ (NOT freeink_) so a future branch that links FreeInkBook's
+// waddle_ (NOT freeink_) so a future branch that links FreeInkBook's
 // identically-renamed copy does not collide.
-#define tinfl_decompress crosspoint_tinfl_decompress
-#define tinfl_decompress_mem_to_heap crosspoint_tinfl_decompress_mem_to_heap
-#define tinfl_decompress_mem_to_mem crosspoint_tinfl_decompress_mem_to_mem
-#define tinfl_decompress_mem_to_callback crosspoint_tinfl_decompress_mem_to_callback
-#define mz_crc32 crosspoint_mz_crc32
-#define mz_adler32 crosspoint_mz_adler32
-#define mz_free crosspoint_mz_free
+#define tinfl_decompress waddle_tinfl_decompress
+#define tinfl_decompress_mem_to_heap waddle_tinfl_decompress_mem_to_heap
+#define tinfl_decompress_mem_to_mem waddle_tinfl_decompress_mem_to_mem
+#define tinfl_decompress_mem_to_callback waddle_tinfl_decompress_mem_to_callback
+#define mz_crc32 waddle_mz_crc32
+#define mz_adler32 waddle_mz_adler32
+#define mz_free waddle_mz_free
 
 // Include the vendored miniz by relative path: ESP-IDF ships a ROM miniz.h
 // with the SAME include guard but a different (TINFL_LESS_MEMORY) struct

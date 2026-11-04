@@ -15,7 +15,7 @@
 #include <cstdint>
 #include <cstdio>
 
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "core/HapticFeedback.h"
 #include "ReaderUtils.h"
 #include "core/components/HeaderBackTapTarget.h"

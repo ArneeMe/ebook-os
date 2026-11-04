@@ -10,15 +10,15 @@ Status: first part built behind `WADDLE_PRIVATE` (on in `x4pro-waddle`). See
 
 | Leak | Before | Now | Code |
 |---|---|---|---|
-| DHCP hostname `CrossPoint-Reader-<MAC>` | In every router log | `reader` | `WifiSelectionActivity.cpp`, `NodeActivity.cpp` |
+| DHCP hostname `Waddle-Reader-<MAC>` | In every router log | `reader` | `WifiSelectionActivity.cpp`, `NodeActivity.cpp` |
 | Plugin events: book, start/end time, duration, progress for every reading session | Queued and sent to subscribed plugins whenever the reader goes online | Never queued, never sent | `src/util/PluginEvents.cpp` |
 | KOReader progress sync (menu, long press, Home key) | Uploads book hash and position | Disabled, menu item hidden | `EpubReaderActivity.cpp`, `EpubReaderMenuActivity.cpp` |
 | NTP to `pool.ntp.org` / `time.nist.gov` on every join | Reveals IP and online times | Off. The RTC keeps time; Settings > Clock > Sync is still there to do it by hand | `WifiSelectionActivity.cpp` |
 | Wi-Fi join at sleep for plugins | Background network use | Never | `src/main.cpp` |
-| CORS `*` on the web server | Any web page in a browser on the LAN could use the API | Off | `CrossPointWebServer.cpp` |
-| Open hotspot `CrossPoint-Reader` | Anyone nearby could join and read the SD card | `Waddle` with a WPA2 password derived from the device, shown on the screen and in the QR code | `CrossPointWebServerActivity.cpp` |
-| User agent `CrossPoint-ESP32-<version>` | Fingerprint for servers | `reader` | `HttpDownloader.cpp`, `PluginHttp.cpp` |
-| KOReader sync, Check for updates | Talk to `sync.crosspointreader.com`, CrossPoint's GitHub | Hidden from Settings (updates come from `tools/waddle-update`) | `SettingsActivity.cpp` |
+| CORS `*` on the web server | Any web page in a browser on the LAN could use the API | Off | `WaddleWebServer.cpp` |
+| Open hotspot `Waddle-Reader` | Anyone nearby could join and read the SD card | `Waddle` with a WPA2 password derived from the device, shown on the screen and in the QR code | `WaddleWebServerActivity.cpp` |
+| User agent `Waddle-ESP32-<version>` | Fingerprint for servers | `reader` | `HttpDownloader.cpp`, `PluginHttp.cpp` |
+| KOReader sync, Check for updates | Talk to the original sync server and GitHub | Hidden from Settings (updates come from `tools/waddle-update`) | `SettingsActivity.cpp` |
 
 Not changed on purpose: the factory MAC address (the router's fixed IP for
 the reader depends on it).
@@ -31,7 +31,7 @@ discovery during File Transfer (LAN only).
 Two layers:
 
 1. **Hide features** that talk to outside servers. Done with our own build flag,
-   `WADDLE_PRIVATE`, so the upstream code stays and CrossPoint updates still merge.
+   `WADDLE_PRIVATE`, so the upstream code stays and Waddle updates still merge.
 2. **Block at the network choke point.** All outbound HTTP goes through two
    places: `HttpDownloader` (`src/network/HttpDownloader.cpp`) and
    `freeink::SecureHttpClient` (FreeInk SDK). A host allowlist there catches
@@ -49,17 +49,17 @@ Layer 2 is the real guarantee. Layer 1 keeps the UI clean.
 
 | Feature | Talks to | Code | Decision |
 |---|---|---|---|
-| Check for updates (OTA) | `api.github.com` (CrossPoint) | `src/network/OtaUpdater.cpp:22` | **Keep**, point at `ArneeMe/waddleos` releases |
-| KOReader sync | `sync.crosspointreader.com`, `sync.koreader.rocks` | `lib/KOReaderSync/` | Hide |
+| Check for updates (OTA) | `api.github.com` (Waddle) | `src/network/OtaUpdater.cpp:22` | **Keep**, point at `ArneeMe/waddleos` releases |
+| KOReader sync | the original sync server, `sync.koreader.rocks` | `lib/KOReaderSync/` | Hide |
 | Clipping sync | Same sync server | `src/clippings/ClippingSync.cpp` | Hide |
-| Plugin Hub install | `pluginhub.crosspointreader.com` | `src/activities/settings/PluginHubInstallActivity.cpp` | Hide |
+| Plugin Hub install | the original plugin hub | `src/activities/settings/PluginHubInstallActivity.cpp` | Hide |
 | Font download | `github.com` | `src/activities/settings/FontDownloadActivity.cpp:178` | Hide. SD card fonts still work |
 | LCP enroll and unlock (DRM books) | `lcp.freeink.org` | `src/network/LcpDevice.cpp:141`, `src/activities/browser/OpdsBookBrowserActivity.cpp:658` | Hide. DRM books will not open |
 | Background Wi-Fi join at sleep | Any plugin event target | `src/main.cpp:403-410` | **Remove.** It joins Wi-Fi without me opening anything |
-| Web server (book upload) | Local network only | `src/activities/network/CrossPointWebServerActivity.cpp` | Keep |
+| Web server (book upload) | Local network only | `src/activities/network/WaddleWebServerActivity.cpp` | Keep |
 | Hotspot mode | Local only | same file, `:243` | Keep |
 | Calibre wireless | Local network only | `src/activities/network/CalibreConnectActivity.cpp` | Keep |
-| mDNS (`crosspoint.local`) | Local network only | `CrossPointWebServerActivity.cpp:48` | Keep, rename to `waddle.local` later |
+| mDNS (`reader.local`) | Local network only | `WaddleWebServerActivity.cpp:48` | Keep |
 | OPDS browser | Servers I add | `src/activities/browser/OpdsBookBrowserActivity.cpp` | Keep, limited by the allowlist |
 | SD card plugins | Whatever the plugin asks | `src/util/PluginHttp.cpp`, `/api/relay`, `/api/fetch` | Keep, limited by the allowlist |
 | Bluetooth page turner | Local radio only | `lib/BlePageTurner` | **Open question** |
@@ -100,7 +100,7 @@ off when you leave it.
   check before each call to it (about 5 call sites).
 - Espressif's Wi-Fi and Bluetooth drivers are closed binaries. They cannot be
   audited. The traffic test covers this.
-- HTTP requests send `User-Agent: CrossPoint-ESP32-<version>`
+- HTTP requests send `User-Agent: Waddle-ESP32-<version>`
   (`src/network/HttpDownloader.cpp:33`). Change it to `WaddleOS` or something neutral.
 
 ## Open questions

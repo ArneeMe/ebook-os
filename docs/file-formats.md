@@ -1,6 +1,6 @@
 # File Formats
 
-These formats describe the SD-card cache files under `/.crosspoint/epub_<hash>/`.
+These formats describe the SD-card cache files under `/.waddleos/epub_<hash>/`.
 All POD fields are written in the ESP32 little-endian representation used by
 `Serialization.h`; strings are length-prefixed UTF-8.
 
@@ -599,7 +599,7 @@ if (parsedSize != fileSize) {
 }
 ```
 
-## CLX1 — library index (`.crosspoint/library.idx`)
+## CLX1 — library index (`.waddleos/library.idx`)
 
 Written by `lib/LibraryIndex/LibraryBuilder.cpp`, read by `LibraryIndexFile`. One
 file describing every book on the card, so the shelf can sort and search
@@ -698,7 +698,7 @@ make a real book disappear.
 `selfSize` is the expected file size. Comparing it against the real one is a free
 truncation guard: a build cut short by a power failure cannot pass.
 
-## Clipping store (`/.crosspoint/clippings/epub_<path-hash>.bin`)
+## Clipping store (`/.waddleos/clippings/epub_<path-hash>.bin`)
 
 Version 4 retains the version 3 header and page-local range fields. After each
 record's layout signature it stores `startOffset` and `endOffset` (uint32 chapter

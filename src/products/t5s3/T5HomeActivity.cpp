@@ -19,7 +19,7 @@
 #include "core/components/themes/BaseTheme.h"
 #include "core/fontIds.h"
 #include "core/waddle/WaddleDraw.h"
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "services/mesh/MeshNode.h"
 #include "services/mesh/MeshSettings.h"
 

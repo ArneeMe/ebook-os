@@ -7,7 +7,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "DictionaryDefinitionActivity.h"
 #include "core/components/UITheme.h"
 

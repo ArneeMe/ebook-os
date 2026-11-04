@@ -4,7 +4,7 @@
       <a class="brand-link" href="/"
         ><img
           class="brand-logo"
-          src="/assets/crosspoint-icon.svg"
+          src="/assets/waddle-icon.svg"
           alt=""
           width="32"
           height="32"

@@ -1,6 +1,6 @@
 #include "TtfEpdFont.h"
 
-#if CROSSPOINT_VECTOR_FONTS
+#if WADDLE_VECTOR_FONTS
 
 #include <Logging.h>
 #include <MemoryManager.h>
@@ -106,7 +106,7 @@ bool TtfEpdFont::load(const uint16_t pointSize, const bool twoBit, const size_t 
                       const uint16_t maxGlyphs) {
   loaded_ = false;
   if (!sources_[Regular].present) return false;
-  // CrossPoint speaks point-size-at-150-DPI (matching the .cpfont converter's
+  // Waddle speaks point-size-at-150-DPI (matching the .cpfont converter's
   // FT_Set_Char_Size(size, size, 150, 150)); FreeInkFont speaks pixels. Convert
   // so vector fonts match the on-glyph size and metrics of the bitmap fonts:
   //   ppem = pointSize * 150 / 72, kept in 26.6 so the fractional part survives
@@ -370,7 +370,7 @@ const EpdGlyph* TtfEpdFont::faultGlyph(Face& f, const uint32_t cp) {
     eg.width = static_cast<uint8_t>(g->width);
     eg.height = static_cast<uint8_t>(g->height);
     eg.left = g->xoff;
-    // FreeInkFont's yoff is negative-above (top offset from baseline); CrossPoint's
+    // FreeInkFont's yoff is negative-above (top offset from baseline); WaddleOS's
     // EpdGlyph.top is positive-above (renderer computes screen Y = cursorY - top,
     // matching the .cpfont converter's top = FreeType bitmap_top). Flip the sign.
     eg.top = static_cast<int16_t>(-g->yoff);
@@ -466,4 +466,4 @@ bool TtfEpdFont::addCoverage(const char* utf8) {
   return true;
 }
 
-#endif  // CROSSPOINT_VECTOR_FONTS
+#endif  // WADDLE_VECTOR_FONTS

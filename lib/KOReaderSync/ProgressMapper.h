@@ -6,7 +6,7 @@
 #include <optional>
 #include <string>
 
-#include "CrossPointPosition.h"
+#include "WaddlePosition.h"
 #include "KOReaderSyncClient.h"
 
 /**
@@ -18,9 +18,9 @@ struct SavedProgressPosition {
 };
 
 /**
- * Maps between CrossPoint and SavedProgress position formats, such as those used by KOReader.
+ * Maps between Waddle and SavedProgress position formats, such as those used by KOReader.
  *
- * CrossPoint tracks position as (spineIndex, visibleTextOffset). Page number is
+ * Waddle tracks position as (spineIndex, visibleTextOffset). Page number is
  * derived from the current section layout.
  * SavedProgress uses XPath-like strings + percentage.
  *
@@ -31,16 +31,16 @@ struct SavedProgressPosition {
 class ProgressMapper {
  public:
   /**
-   * Convert CrossPoint position to SavedProgress format.
+   * Convert Waddle position to SavedProgress format.
    *
    * @param epub The EPUB book
-   * @param pos CrossPoint position
+   * @param pos Waddle position
    * @return SavedProgress position
    */
-  static SavedProgressPosition toSavedProgress(const std::shared_ptr<Epub>& epub, const CrossPointPosition& pos);
+  static SavedProgressPosition toSavedProgress(const std::shared_ptr<Epub>& epub, const WaddlePosition& pos);
 
   /**
-   * Convert SavedProgress position to CrossPoint format.
+   * Convert SavedProgress position to Waddle format.
    *
    * Note: The returned pageNumber may be approximate since different
    * rendering settings produce different page counts.
@@ -50,26 +50,26 @@ class ProgressMapper {
    * @param renderer GfxRenderer for page count estimation
    * @param currentSpineIndex Index of the currently open spine item (for density estimation)
    * @param totalPagesInCurrentSpine Total pages in the current spine item (for density estimation)
-   * @return CrossPoint position
+   * @return Waddle position
    */
-  static CrossPointPosition toCrossPoint(const std::shared_ptr<Epub>& epub, const SavedProgressPosition& savedPos,
+  static WaddlePosition toWaddle(const std::shared_ptr<Epub>& epub, const SavedProgressPosition& savedPos,
                                          GfxRenderer& renderer, int currentSpineIndex = -1,
                                          int totalPagesInCurrentSpine = 0, int fallbackTotalPages = 0);
 
   /**
-   * Convert a rich CrossPoint position (downloaded from a crosspoint-sync
-   * server) directly to a CrossPoint position. Its standard KOReader XPath is
+   * Convert a rich position (downloaded from the original sync
+   * server) directly to a Waddle position. Its standard KOReader XPath is
    * resolved to a content offset first; legacy spine/page/paragraph hints are
    * used only when that content anchor cannot be applied.
    *
    * @param xpathAlreadyTried when true, skip re-resolving rich.xpath and go straight to the
    *        legacy page hints. The caller sets this when it just resolved the identical XPath via
-   *        toCrossPoint(), so retrying it here would decompress the chapter twice for nothing.
+   *        toWaddle(), so retrying it here would decompress the chapter twice for nothing.
    * @return The position, or std::nullopt when the rich position cannot be
    *         applied (spine out of range, no section cache) and the caller
-   *         should fall back to toCrossPoint().
+   *         should fall back to toWaddle().
    */
-  static std::optional<CrossPointPosition> fromRichPosition(const std::shared_ptr<Epub>& epub,
+  static std::optional<WaddlePosition> fromRichPosition(const std::shared_ptr<Epub>& epub,
                                                             const KOReaderRichPosition& rich, GfxRenderer& renderer,
                                                             bool xpathAlreadyTried = false);
 

@@ -1,5 +1,5 @@
 """
-PlatformIO post: script: apply CrossPoint's SdFat patches via `git apply`.
+PlatformIO post: script: apply Waddle's SdFat patches via `git apply`.
 
 The patches in `scripts/sdfat_patches/` make USE_SEPARATE_FAT_CACHE
 overridable and invalidate the sector cache after a failed read (see the

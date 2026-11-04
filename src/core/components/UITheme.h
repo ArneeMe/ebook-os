@@ -5,7 +5,7 @@
 #include <functional>
 #include <memory>
 
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "core/components/themes/BaseTheme.h"
 
 class UITheme {

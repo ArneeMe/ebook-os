@@ -6,9 +6,8 @@
 
 <p align="center">Personal e-reader firmware for the Xteink X4 Pro. 🐧</p>
 
-WaddleOS is my fork of [CrossPoint Reader](https://github.com/crosspoint-reader/crosspoint-reader),
-open-source firmware for Xteink e-readers. All the reading features come from
-CrossPoint. WaddleOS adds:
+WaddleOS is my own firmware for the Xteink X4 Pro e-reader and the LilyGO T5
+mesh units. Besides the reader it has:
 
 - Hjem: clock, weather, the book you are reading and NRK headlines, with penguins.
 - Nyheter: NRK's top stories as a book, fetched from arnee.me.
@@ -25,9 +24,8 @@ See [the plan](docs/waddle/PLAN.md) and [privacy notes](docs/waddle/phase2-priva
 
 1. Download [`waddleos-x4pro.bin`](https://github.com/ArneeMe/waddleos/releases/download/waddle-latest/waddleos-x4pro.bin)
    from the `waddle-latest` pre-release. It is built from the `waddle` branch.
-2. Flash it with the web flasher at <https://crosspointreader.com> (choose
-   "Custom .bin"), or upload it over Wi-Fi and use **Settings → firmware update**
-   on the reader.
+2. Flash it once over USB with an ESP32 web flasher that takes a custom .bin,
+   or upload it over Wi-Fi and use **Settings → firmware update** on the reader.
 
 Back up the stock firmware first. Only for units that are not USB-locked
 (bought from xteink.com).
@@ -60,11 +58,9 @@ pio run -e x4pro-waddle
 ## Working on WaddleOS
 
 - `waddle` is the main branch. Work on a branch and open a pull request into it.
-- WaddleOS started from CrossPoint but no longer follows it; see
-  [AGENTS.md](AGENTS.md) for the goals and rules.
+- See [AGENTS.md](AGENTS.md) for the goals and rules.
 
 ## Credits
 
-All credit for the reader goes to the [CrossPoint Reader](https://github.com/crosspoint-reader/crosspoint-reader)
-team and the [FreeInk SDK](https://github.com/Free-Ink/freeink-sdk). MIT license,
+Built on the [FreeInk SDK](https://github.com/Free-Ink/freeink-sdk). MIT license,
 see [LICENSE](LICENSE).

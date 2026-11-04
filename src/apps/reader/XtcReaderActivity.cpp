@@ -9,7 +9,7 @@
 
 #include <algorithm>
 
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "ProgressFile.h"
 #include "ReaderActivity.h"
 #include "ReaderUtils.h"
@@ -18,7 +18,7 @@
 #include "core/fontIds.h"
 
 bool XtcReaderActivity::loadBook() {
-  auto loadedXtc = makeUniqueNoThrow<Xtc>(bookPath, "/.crosspoint");
+  auto loadedXtc = makeUniqueNoThrow<Xtc>(bookPath, "/.waddleos");
   if (!loadedXtc) {
     LOG_ERR("XTR", "Failed to allocate XTC object");
     return false;

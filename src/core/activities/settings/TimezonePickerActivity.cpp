@@ -3,7 +3,7 @@
 #include <GfxRenderer.h>
 #include <I18n.h>
 
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "core/MappedInputManager.h"
 #include "core/components/UITheme.h"
 #include "core/util/Timezones.h"

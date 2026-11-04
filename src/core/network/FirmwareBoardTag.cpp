@@ -6,8 +6,8 @@
 
 // The device a firmware image is for. Each build sets its own (platformio.ini),
 // so the reader refuses a mesh-unit image and the other way round.
-#ifndef CROSSPOINT_BOARD_NAME
-#define CROSSPOINT_BOARD_NAME "x4pro"
+#ifndef WADDLE_BOARD_NAME
+#define WADDLE_BOARD_NAME "x4pro"
 #endif
 
 namespace board_tag {
@@ -15,10 +15,10 @@ namespace board_tag {
 namespace {
 // The magic's first character must not recur inside it — the scanner restarts
 // a failed match with a single-byte lookback, which is only exact then.
-constexpr size_t MAGIC_LEN = sizeof("CROSSPOINT-BOARD-V1:") - 1;
+constexpr size_t MAGIC_LEN = sizeof("WADDLE-BOARD-V1:") - 1;
 }  // namespace
 
-const char TAG[] = "CROSSPOINT-BOARD-V1:" CROSSPOINT_BOARD_NAME ";";
+const char TAG[] = "WADDLE-BOARD-V1:" WADDLE_BOARD_NAME ";";
 
 const char* boardName() { return TAG + MAGIC_LEN; }
 size_t boardNameLen() { return sizeof(TAG) - 1 - MAGIC_LEN - 1; }  // strip magic and ';'

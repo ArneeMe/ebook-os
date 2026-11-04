@@ -8,7 +8,7 @@
 
 #include <memory>
 
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "core/MappedInputManager.h"
 #include "TimezonePickerActivity.h"
 #include "core/components/UITheme.h"
@@ -29,7 +29,7 @@ const StrId menuNames[ClockSettingsActivity::ITEM_COUNT] = {
     StrId::STR_CLOCK_IN_HEADER,
 };
 
-const StrId dstNames[CrossPointSettings::CLOCK_DST_MODE_COUNT] = {StrId::STR_CLOCK_DST_AUTO, StrId::STR_STATE_ON,
+const StrId dstNames[WaddleSettings::CLOCK_DST_MODE_COUNT] = {StrId::STR_CLOCK_DST_AUTO, StrId::STR_STATE_ON,
                                                                   StrId::STR_STATE_OFF};
 }  // namespace
 
@@ -58,7 +58,7 @@ void ClockSettingsActivity::activateIndex(const int index) {
       }
       return;
     case ITEM_DST:
-      SETTINGS.clockDst = (SETTINGS.clockDst + 1) % CrossPointSettings::CLOCK_DST_MODE_COUNT;
+      SETTINGS.clockDst = (SETTINGS.clockDst + 1) % WaddleSettings::CLOCK_DST_MODE_COUNT;
       timezones::applyToClock();
       break;
     case ITEM_FORMAT:
@@ -83,7 +83,7 @@ void ClockSettingsActivity::buildScreen(UiScreen& screen) {
   // Every value is a flash/translation string or the member time buffer, so
   // the render pass allocates nothing.
   rowItems_[ITEM_TIMEZONE].value = timezones::table()[timezones::activeIndex()].name;
-  const uint8_t dst = SETTINGS.clockDst < CrossPointSettings::CLOCK_DST_MODE_COUNT ? SETTINGS.clockDst : uint8_t{0};
+  const uint8_t dst = SETTINGS.clockDst < WaddleSettings::CLOCK_DST_MODE_COUNT ? SETTINGS.clockDst : uint8_t{0};
   rowItems_[ITEM_DST].value = I18N.get(dstNames[dst]);
   rowItems_[ITEM_FORMAT].value = SETTINGS.clockFormat == 1 ? tr(STR_CLOCK_FORMAT_12H) : tr(STR_CLOCK_FORMAT_24H);
   GUI.setCheckboxRow(rowItems_[ITEM_SHOW_ON_HOME], SETTINGS.clockShowInHeader);

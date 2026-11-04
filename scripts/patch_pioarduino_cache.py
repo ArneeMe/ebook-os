@@ -41,7 +41,7 @@ board = env.BoardConfig()
 mcu = board.get("build.mcu", "esp32")
 chip_variant = board.get("build.chip_variant", "").lower() or mcu
 component_spec = importlib.util.spec_from_file_location(
-    "crosspoint_pio_components", builder.with_name("component_manager.py")
+    "waddle_pio_components", builder.with_name("component_manager.py")
 )
 components = importlib.util.module_from_spec(component_spec)
 component_spec.loader.exec_module(components)
@@ -51,7 +51,7 @@ cache_request = requested.strip() + memory_fingerprint if requested.strip() else
 framework_libs = Path(platform.get_package_dir("framework-arduinoespressif32-libs"))
 target_sdkconfig = framework_libs / chip_variant / "sdkconfig"
 original_sdkconfig = framework_libs / chip_variant / "sdkconfig.orig"
-request_file = framework_libs / chip_variant / "sdkconfig.crosspoint"
+request_file = framework_libs / chip_variant / "sdkconfig.waddle"
 
 rebuild = bool(requested.strip())
 if original_sdkconfig.is_file():

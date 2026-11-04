@@ -1464,7 +1464,7 @@
     }
   </style>
   <link rel="stylesheet" href="/assets/web.css" />
-  <link rel="icon" type="image/svg+xml" href="/assets/crosspoint-icon.svg" />
+  <link rel="icon" type="image/svg+xml" href="/assets/waddle-icon.svg" />
 </head>
 <body class="web-ui">
 <!--#include file="shared/Header.html.inc" -->
@@ -1910,7 +1910,7 @@
   }
 
   async function hydrate() {
-    // Fetch CrossPoint version
+    // Fetch Waddle version
     fetchVersion();
 
     // Keep upload cleanup rules when a dialog is cancelled or its backdrop is clicked.
@@ -3332,7 +3332,7 @@ let ENABLE_GRAYSCALE = DEFAULT_ENABLE_GRAYSCALE;
 let ENABLE_AUTO_CROP = DEFAULT_ENABLE_AUTO_CROP;
 let HANDEDNESS = 'right'; // 'right' = clockwise (right-handed), 'left' = counter-clockwise (left-handed)
 let OVERLAP_PERCENT = 5; // Minimum overlap percentage for splits (5%, 10%, 15%)
-const UPLOAD_SETTINGS_STORAGE_KEY = 'crosspoint.files.uploadSettings.v1';
+const UPLOAD_SETTINGS_STORAGE_KEY = 'waddle.files.uploadSettings.v1';
 const DEFAULT_UPLOAD_SETTINGS = Object.freeze({
   convertBeforeUpload: false,
   renameFromMetadata: false,
@@ -3421,8 +3421,8 @@ const logSection = document.getElementById('log-section');
 const logContainer = document.getElementById('log-container');
 const exportLogCheckbox = document.getElementById('export-log-checkbox');
 
-// CrossPoint version (fetched from API)
-let crosspointVersion = 'Unknown';
+// Waddle version (fetched from API)
+let waddleVersion = 'Unknown';
 
 // Fetch version from API
 async function fetchVersion() {
@@ -3430,7 +3430,7 @@ async function fetchVersion() {
     const response = await fetch('/api/status');
     if (response.ok) {
       const data = await response.json();
-      crosspointVersion = data.version || 'Unknown';
+      waddleVersion = data.version || 'Unknown';
       if (data.device === 'X3' || data.device === 'X4') {
         DETECTED_DEVICE = data.device;
         applyDeviceTarget();
@@ -3768,7 +3768,7 @@ function exportLogToFile(filename = null, isBatch = false) {
   }
   // Extract text from log entries
   const entries = logContainer.querySelectorAll('.log-entry');
-  let logText = `WaddleOS ${crosspointVersion} - EPUB Conversion Log\n`;
+  let logText = `WaddleOS ${waddleVersion} - EPUB Conversion Log\n`;
   logText += `Generated: ${new Date().toLocaleString()}\n`;
   logText += `${'='.repeat(60)}\n\n`;
 
@@ -4145,7 +4145,7 @@ function syncNCXIdentifier(ncxText, mainIdentifier) {
 }
 
 // ===== Embedded font removal =====
-// CrossPoint renders with built-in / SD-card fonts and never loads fonts
+// Waddle renders with built-in / SD-card fonts and never loads fonts
 // embedded in an EPUB, so they are dead weight (often 100KB-2MB per book).
 const FONT_EXT_REGEX = /\.(ttf|otf|woff2?|eot)$/;
 const FONT_MEDIA_TYPE_REGEX = /^(font\/|application\/font-|application\/x-font-|application\/vnd\.ms-(opentype|fontobject)$)/i;
@@ -5181,7 +5181,7 @@ async function convertEpubFile(file, progressCallback) {
     if (progressCallback) progressCallback((i / entries.length) * 60);
   }
 
-  // Embedded fonts are dropped entirely — CrossPoint never renders with them.
+  // Embedded fonts are dropped entirely — Waddle never renders with them.
   // Counters cover font files, @font-face rules (incl. data: URI fonts), and
   // encryption.xml shrinkage; they count uncompressed content bytes removed
   // (the final archive-size delta is reported separately by logSummary).
@@ -5217,7 +5217,7 @@ async function convertEpubFile(file, progressCallback) {
         let modified = false;
 
         // Remove width/height attributes from ALL img tags (dimensions may have changed)
-        // This prevents CrossPoint and other readers from using wrong dimensions
+        // This prevents Waddle and other readers from using wrong dimensions
         const allImgElements = doc.querySelectorAll('img');
         for (const img of allImgElements) {
           if (img.hasAttribute('width')) { img.removeAttribute('width'); modified = true; }

@@ -23,8 +23,8 @@ What is done and what is next. How the system fits together:
 - **Computer:** one `waddle` command (`update`, `book`, `add`, `dict get`).
 - **Privacy:** everything that talked to outside servers is removed. The
   reader talks only to arnee.me and the Bluesound Node, when Arne opens a screen.
-- **Simpler:** over 20,000 lines of CrossPoint removed (see ARCHITECTURE.md,
-  "Removed from CrossPoint"). Norwegian and English only.
+- **Simpler:** over 20,000 lines of Waddle removed (see ARCHITECTURE.md,
+  "Removed from Waddle"). Norwegian and English only.
 
 ## Next (ideas Arne has mentioned, not started)
 

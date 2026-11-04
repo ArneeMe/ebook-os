@@ -12,7 +12,7 @@
 
 #include <algorithm>
 
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "ConfirmationActivity.h"
 #include "core/components/UITheme.h"
 #include "core/fontIds.h"
@@ -39,8 +39,8 @@ RenderConfig fitImage(const ImageDimensions& dimensions, const GfxRenderer& rend
 
 bool overlaySleepMode() {
   const uint8_t mode = SETTINGS.sleepScreen;
-  return mode == CrossPointSettings::SLEEP_SCREEN_MODE::TRANSPARENT_CUSTOM ||
-         mode == CrossPointSettings::SLEEP_SCREEN_MODE::COVER_TRANSPARENT;
+  return mode == WaddleSettings::SLEEP_SCREEN_MODE::TRANSPARENT_CUSTOM ||
+         mode == WaddleSettings::SLEEP_SCREEN_MODE::COVER_TRANSPARENT;
 }
 }  // namespace
 
@@ -315,7 +315,7 @@ bool BmpViewerActivity::saveJpegSleepCover() {
   ImageDimensions dimensions;
   if (!decoder.getDimensions(filePath, dimensions)) return false;
   auto config = fitImage(dimensions, renderer);
-  if (SETTINGS.sleepScreenCoverMode == CrossPointSettings::SLEEP_SCREEN_COVER_MODE::CROP &&
+  if (SETTINGS.sleepScreenCoverMode == WaddleSettings::SLEEP_SCREEN_COVER_MODE::CROP &&
       (dimensions.width > renderer.getScreenWidth() || dimensions.height > renderer.getScreenHeight())) {
     const float ratio = static_cast<float>(dimensions.width) / dimensions.height;
     const float screenRatio = static_cast<float>(renderer.getScreenWidth()) / renderer.getScreenHeight();
@@ -428,7 +428,7 @@ void BmpViewerActivity::doSetSleepCover() {
   }
 
   if (success) {
-    if (!transparentMode) SETTINGS.sleepScreen = CrossPointSettings::SLEEP_SCREEN_MODE::CUSTOM;
+    if (!transparentMode) SETTINGS.sleepScreen = WaddleSettings::SLEEP_SCREEN_MODE::CUSTOM;
     SETTINGS.saveToFile();
     GUI.drawPopup(renderer, tr(STR_DONE));
   } else {

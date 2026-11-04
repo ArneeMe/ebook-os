@@ -7,7 +7,7 @@
 #include <string>
 
 #include "apps/messages/MeshUi.h"
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "core/MappedInputManager.h"
 #include "core/fontIds.h"
 #include "core/waddle/WaddleVersion.h"
@@ -19,7 +19,7 @@ namespace {
 constexpr int SIDE = 20;
 constexpr int ROW_H = 68;
 constexpr uint8_t POSITION_MINUTES[] = {5, 10, 15, 30, 60};
-constexpr uint8_t SLEEP_MINUTES[] = {1, 2, 5, 10, 15, 30, CrossPointSettings::SLEEP_TIMEOUT_NEVER_MINUTES};
+constexpr uint8_t SLEEP_MINUTES[] = {1, 2, 5, 10, 15, 30, WaddleSettings::SLEEP_TIMEOUT_NEVER_MINUTES};
 
 const char* checkText(const uint8_t check) {
   static const char* names[] = {"lytter hele tiden", "hvert kvarter", "hver time",
@@ -125,7 +125,7 @@ void T5SettingsActivity::render(RenderLock&&) {
   };
 
   section("GJELDER ALT");
-  if (SETTINGS.sleepTimeoutMinutes >= CrossPointSettings::SLEEP_TIMEOUT_NEVER_MINUTES) {
+  if (SETTINGS.sleepTimeoutMinutes >= WaddleSettings::SLEEP_TIMEOUT_NEVER_MINUTES) {
     snprintf(value, sizeof(value), "aldri");
   } else {
     snprintf(value, sizeof(value), "etter %u min uten trykk", static_cast<unsigned>(SETTINGS.sleepTimeoutMinutes));

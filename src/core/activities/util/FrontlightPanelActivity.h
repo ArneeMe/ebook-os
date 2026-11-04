@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "core/activities/Activity.h"
 #include "core/components/UiAppHost.h"
 #include "core/util/ButtonNavigator.h"

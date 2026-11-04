@@ -272,7 +272,6 @@ bool BookMetadataCache::buildBookBin(const std::string& epubPath, const BookMeta
     // Instead, for large books we use a batch lookup that scans the ZIP central
     // directory once per chunk and matches against spine targets using hash comparison.
     // This is O(n*log(m)) instead of O(n*m) while avoiding memory exhaustion.
-    // See: https://github.com/crosspoint-reader/crosspoint-reader/issues/134
 
     if (spineCount >= LARGE_SPINE_THRESHOLD) {
       LOG_DBG("BMC", "Using batch size lookup for %d spine items", spineCount);
