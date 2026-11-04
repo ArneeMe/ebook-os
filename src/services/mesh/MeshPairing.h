@@ -17,6 +17,12 @@ std::string start(const std::string& commitHex);
 bool reveal(const std::string& toolHex, const std::string& nonceHex);
 // The six digits for the screen, or nullptr before a reveal.
 const char* code();
+// The person tapped the code on the unit's own screen: only then do open()
+// and seal() work, so nobody else on the Wi-Fi can take the keys.
+void approve();
+bool approved();
+// Revealed, but not yet approved on the screen.
+bool waitingForApproval();
 // A body that key sealed (nonce byte 2), opened; "" when it is not from it.
 std::string open(const std::string& toolHex, const std::string& boxHex);
 // plain sealed for that key with this nonce byte, as hex.

@@ -178,6 +178,9 @@ class World:
         unit_code = u.cmd("pair-reveal %s %s" % (tool[1], tool[3]))
         assert unit_code == ["code " + " ".join(tool[5:7])], (unit_code, tool)
         request = p.cmd("pairc-request")[0].split()[1]
+        # Not before the code is tapped on the unit: someone else on the Wi-Fi gets nothing.
+        assert u.cmd("pair-phone " + request) == ["refused"]
+        u.cmd("pair-approve")
         box = u.cmd("pair-phone " + request)[0].split()
         assert box[0] == "box", box
         assert p.cmd("pairc-finish " + box[1]) == ["paired"]

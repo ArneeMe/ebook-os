@@ -331,7 +331,11 @@ at most 1 KB, and forgets them after 7 days.
   BLAKE2b-256(T || U || Nt || Nu) on its File Transfer screen, which the person
   compares with the tool's. Because the tool is bound before it sees Nu, and the
   unit's Nu is fresh, someone on the Wi-Fi cannot pick a key that gives the
-  same digits. The unit then takes sealed bodies only from T.
+  same digits. The unit then takes sealed bodies only from T, and only once
+  the person has tapped the code on the unit's own screen (or pressed OK):
+  until then `/api/mesh/join` and `/api/mesh/phone` answer 423, and the tool
+  and the phone ask again every 2 seconds. So nobody else on the Wi-Fi can run
+  the steps and take the unit's keys.
 - *Unit, `POST /api/mesh/join`* (File Transfer web server; body sealed like
   setup: `{"tool", "box"}`, setup key, nonce byte 2) with `{"invite": link,
   "name": name}`. Refused when the unit is in a network. The unit keeps the invitation in flash and answers
