@@ -24,6 +24,8 @@ class ChatActivity : Activity() {
     private lateinit var scroll: ScrollView
     private lateinit var input: EditText
     private var conv = 0
+    /** A chess square tapped first ("e2"), per game ("sender:counter"). */
+    private val chessFrom = mutableMapOf<String, String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,8 +91,12 @@ class ChatActivity : Activity() {
 
     private fun plus() {
         AlertDialog.Builder(this)
-            .setItems(arrayOf("Avstemning", "Fire på rad")) { _, which ->
-                if (which == 0) newPoll() else act { Mesh.startGame(conv) }
+            .setItems(arrayOf("Avstemning", "Fire på rad", "Sjakk")) { _, which ->
+                when (which) {
+                    0 -> newPoll()
+                    1 -> act { Mesh.startGame(conv, "fourinrow") }
+                    else -> act { Mesh.startGame(conv, "chess") }
+                }
             }
             .show()
     }
@@ -140,6 +146,8 @@ class ChatActivity : Activity() {
         box.addView(Ui.text(this, head, 12f, color = Ui.DIM))
         when {
             m.has("poll") -> box.addView(pollCard(m), LinearLayout.LayoutParams(-1, -2))
+            m.has("game") && m.getJSONObject("game").optString("kind") == "chess" ->
+                box.addView(chessCard(m), LinearLayout.LayoutParams(-1, -2))
             m.has("game") -> box.addView(gameCard(m), LinearLayout.LayoutParams(-1, -2))
             else -> {
                 val text = Ui.text(this, m.optString("text"), 16f, color = if (mine) Color.WHITE else Ui.INK)
@@ -202,7 +210,7 @@ class ChatActivity : Activity() {
                 val full = board.getOrNull(c) != '0'
                 val drop = Ui.text(this, if (full) "" else "↓", 20f, bold = true)
                 drop.gravity = Gravity.CENTER
-                if (!full) drop.setOnClickListener { act { Mesh.move(conv, sender, counter, c) } }
+                if (!full) drop.setOnClickListener { act { Mesh.move(conv, sender, counter, c.toString()) } }
                 drops.addView(drop, LinearLayout.LayoutParams(0, Ui.dp(this, 36), 1f))
             }
             grid.addView(drops)
@@ -217,6 +225,65 @@ class ChatActivity : Activity() {
             grid.addView(line)
         }
         box.addView(grid, LinearLayout.LayoutParams(-1, -2))
+        return box
+    }
+
+    /** Sjakk: tap a piece, then where it goes; the C++ side refuses illegal moves. */
+    private fun chessCard(m: JSONObject): LinearLayout {
+        val game = m.getJSONObject("game")
+        val sender = m.optInt("sender")
+        val counter = m.optLong("counter")
+        val key = "$sender:$counter"
+        val box = card()
+        box.addView(Ui.text(this, "Sjakk", 17f, bold = true))
+        box.addView(Ui.text(this, game.optString("players"), 13f, color = Ui.DIM))
+        box.addView(Ui.text(this, game.optString("status"), 15f, bold = true))
+        val board = game.optString("board")
+        val flipped = game.optBoolean("flipped")
+        val canMove = game.optBoolean("canMove")
+        val from = chessFrom[key]
+        val grid = Ui.column(this)
+        grid.setPadding(0, Ui.dp(this, 8), 0, 0)
+        for (row in 0 until 8) {
+            val line = Ui.row(this)
+            for (col in 0 until 8) {
+                val file = if (flipped) 7 - col else col
+                val rank = if (flipped) row else 7 - row
+                val name = "${'a' + file}${rank + 1}"
+                val piece = board.getOrNull(row * 8 + col) ?: '.'
+                val glyph = when (piece) {
+                    'K' -> "♔"; 'Q' -> "♕"; 'R' -> "♖"; 'B' -> "♗"; 'N' -> "♘"; 'P' -> "♙"
+                    'k' -> "♚"; 'q' -> "♛"; 'r' -> "♜"; 'b' -> "♝"; 'n' -> "♞"; 'p' -> "♟"
+                    else -> ""
+                }
+                val cell = Ui.text(this, glyph, 24f).apply { gravity = Gravity.CENTER }
+                val dark = (file + rank) % 2 == 0
+                cell.setBackgroundColor(if (name == from) Ui.INK else if (dark) Ui.LINE else Color.WHITE)
+                if (name == from) cell.setTextColor(Color.WHITE)
+                if (canMove) cell.setOnClickListener {
+                    val first = chessFrom[key]
+                    if (first == null || first == name) {
+                        if (first == name) chessFrom.remove(key) else chessFrom[key] = name
+                        refresh()
+                    } else {
+                        chessFrom.remove(key)
+                        act { Mesh.move(conv, sender, counter, first + name) }
+                    }
+                }
+                line.addView(cell, LinearLayout.LayoutParams(0, Ui.dp(this, 40), 1f))
+            }
+            grid.addView(line)
+        }
+        box.addView(grid, LinearLayout.LayoutParams(-1, -2))
+        if (game.optBoolean("mine") && !game.optBoolean("over")) {
+            box.addView(Ui.button(this, "Gi opp", filled = false) {
+                AlertDialog.Builder(this)
+                    .setTitle("Gi opp partiet?")
+                    .setPositiveButton("Gi opp") { _, _ -> act { Mesh.move(conv, sender, counter, "x") } }
+                    .setNegativeButton("Avbryt", null)
+                    .show()
+            })
+        }
         return box
     }
 }

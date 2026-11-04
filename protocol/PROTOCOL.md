@@ -237,13 +237,15 @@ code is `lib/WaddleMesh/src/MeshPlay.*`.
 |---|---|
 | `0x01 'A'` question, then `0x1F` and an answer, 2 to 4 times | a poll (question ≤ 200 bytes, answers ≤ 60) |
 | `0x01 'a'` ref, answer (1 hex digit, 0-3) | my vote; a person's newest vote counts, from either device |
-| `0x01 'S'` game | a challenge; `'F'` = Fire på rad (7 × 6, four in a line) |
-| `0x01 'm'` ref, move number (4 hex, from 1), move | a move; Fire på rad: the column, `'0'`-`'6'` |
+| `0x01 'S'` game | a challenge; `'F'` = Fire på rad (7 × 6, four in a line), `'C'` = Sjakk |
+| `0x01 'm'` ref, move number (4 hex, from 1), move | a move; Fire på rad: the column, `'0'`-`'6'`; Sjakk: from and to square, `e2e4` (`e7e8q` to promote; without a letter a pawn becomes a queen); either game: `x` = I give up |
 
 Where a game stands is the moves replayed in their numbered order, so it does
 not matter in which order they arrive. Whoever makes move 1 takes the challenge
 (anyone but the challenger: in a group, the first to move) and plays the odd
-moves; the challenger plays the even ones. A move with the wrong number, from
+moves (white in chess); the challenger plays the even ones. Chess follows the
+usual rules (castling, en passant, promotion, checkmate, stalemate), without
+draws by repetition or the 50-move rule: a player can give up instead. A move with the wrong number, from
 the wrong person or that does not fit the board is skipped; if a person's two
 devices both send the same move number, the first the conversation has counts.
 A version that does not know a kind or game shows "(trenger nyere versjon)".

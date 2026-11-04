@@ -826,6 +826,33 @@ static void testPlay() {
   FourInRow b;
   for (int i = 0; i < FourInRow::ROWS; i++) CHECK(b.drop(0));
   CHECK(!b.drop(0) && !b.canDrop(7) && b.winner == 0);
+
+  // Sjakk: fool's mate, black wins.
+  Chess c;
+  CHECK(c.targets(12).size() == 2 && c.targets(52).empty());  // e2: e3, e4; black waits
+  CHECK(!c.play("e2e5") && !c.play("e7e5") && !c.play("z9a1"));
+  for (const char* m : {"f2f3", "e7e5", "g2g4", "d8h4"}) CHECK(c.play(m));
+  CHECK(c.winner == 2 && c.inCheck(true) && !c.play("a2a3"));
+
+  // Castling, en passant and promotion.
+  Chess d;
+  for (const char* m : {"e2e4", "a7a6", "g1f3", "a6a5", "f1e2", "a5a4", "b2b4"}) CHECK(d.play(m));
+  CHECK(d.play("a4b3"));  // en passant: the pawn on b4 is gone
+  CHECK(d.board[25] == '.' && d.board[17] == 'p');
+  CHECK(d.play("e1g1") && d.board[6] == 'K' && d.board[5] == 'R');  // short castling
+  for (const char* m : {"b3a2", "h2h3", "a2b1n"}) CHECK(d.play(m));  // takes the knight, promotes
+  CHECK(d.board[1] == 'n');
+
+  // A chess game over messages, and giving up.
+  const std::string chess = writeGame(Game::Chess);
+  CHECK(read(chess, p) && p.game == Game::Chess && preview(chess) == "utfordrer til sjakk");
+  const Ref cg{1, 50};
+  const std::string m1 = writeMove(cg, 1, "e2e4"), m2 = writeMove(cg, 2, "e7e5"), bad = writeMove(cg, 3, "e1e3"),
+                    quit = writeMove(cg, 3, "x");
+  std::vector<Entry> ce = {{1, 50, &chess}, {2, 1, &m1}, {1, 51, &m2}, {2, 2, &bad}};
+  CHECK(replay(cg, ce, s) && s.game == Game::Chess && s.moves() == 2 && s.toMove() == 2 && !s.winner());
+  ce.push_back({2, 3, &quit});
+  CHECK(replay(cg, ce, s) && s.winner() == 2 && s.gaveUp == 1);
 }
 
 int main(int argc, char** argv) {

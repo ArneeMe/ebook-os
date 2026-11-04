@@ -1,6 +1,8 @@
 #include "MeshPlay.h"
 
+#include <algorithm>
 #include <cstdio>
+#include <cstring>
 #include <cstdlib>
 
 namespace mesh::play {
@@ -79,7 +81,7 @@ bool read(const std::string& text, Play& out) {
     }
     case Kind::Game:
       out.game = Game(text.size() == 3 ? text[2] : 0);
-      return out.game == Game::FourInRow;
+      return out.game == Game::FourInRow || out.game == Game::Chess;
     case Kind::Move: {
       uint32_t number = 0;
       if (!readRef(text, out.of) || !hex(text, 2 + REF_SIZE, 4, number) || number == 0) return false;
@@ -128,7 +130,7 @@ std::string preview(const std::string& text) {
     case Kind::Vote:
       return "stemte";
     case Kind::Game:
-      return "utfordrer til fire på rad";
+      return p.game == Game::Chess ? "utfordrer til sjakk" : "utfordrer til fire på rad";
     case Kind::Move:
       return "gjorde et trekk";
   }
@@ -179,7 +181,187 @@ bool FourInRow::drop(const int col) {
   return true;
 }
 
-uint8_t GameState::toMove() const { return board.turn() == 1 ? opponent : challenger; }
+// --- Sjakk ---
+
+namespace {
+
+bool isWhite(const char p) { return p >= 'A' && p <= 'Z'; }
+char lower(const char p) { return isWhite(p) ? char(p - 'A' + 'a') : p; }
+int fileOf(const int sq) { return sq % 8; }
+int rankOf(const int sq) { return sq / 8; }
+bool onBoard(const int f, const int r) { return f >= 0 && f < 8 && r >= 0 && r < 8; }
+
+constexpr int KNIGHT[8][2] = {{1, 2}, {2, 1}, {2, -1}, {1, -2}, {-1, -2}, {-2, -1}, {-2, 1}, {-1, 2}};
+constexpr int KING[8][2] = {{1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}};
+constexpr int ROOK[4][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+constexpr int BISHOP[4][2] = {{1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
+
+// Whether a piece of that colour attacks sq.
+bool attacked(const char* b, const int sq, const bool byWhite) {
+  const int f = fileOf(sq), r = rankOf(sq);
+  auto is = [&](const int ff, const int rr, const char piece) {
+    if (!onBoard(ff, rr)) return false;
+    const char p = b[rr * 8 + ff];
+    return p != '.' && isWhite(p) == byWhite && lower(p) == piece;
+  };
+  const int pawnRank = byWhite ? r - 1 : r + 1;
+  if (is(f - 1, pawnRank, 'p') || is(f + 1, pawnRank, 'p')) return true;
+  for (const auto& d : KNIGHT) {
+    if (is(f + d[0], r + d[1], 'n')) return true;
+  }
+  for (const auto& d : KING) {
+    if (is(f + d[0], r + d[1], 'k')) return true;
+  }
+  for (int line = 0; line < 2; line++) {
+    for (const auto& d : line ? BISHOP : ROOK) {
+      for (int ff = f + d[0], rr = r + d[1]; onBoard(ff, rr); ff += d[0], rr += d[1]) {
+        const char p = b[rr * 8 + ff];
+        if (p == '.') continue;
+        const char want = line ? 'b' : 'r';
+        if (isWhite(p) == byWhite && (lower(p) == want || lower(p) == 'q')) return true;
+        break;
+      }
+    }
+  }
+  return false;
+}
+
+}  // namespace
+
+Chess::Chess() { memcpy(board, "RNBQKBNRPPPPPPPP................................pppppppprnbqkbnr", 64); }
+
+std::string Chess::squareName(const int sq) {
+  return std::string{char('a' + fileOf(sq)), char('1' + rankOf(sq))};
+}
+
+bool Chess::inCheck(const bool white) const {
+  const char king = white ? 'K' : 'k';
+  for (int sq = 0; sq < 64; sq++) {
+    if (board[sq] == king) return attacked(board, sq, !white);
+  }
+  return false;
+}
+
+std::vector<int> Chess::targets(const int from) const {
+  std::vector<int> out;
+  if (from < 0 || from >= 64 || winner) return out;
+  const char p = board[from];
+  const bool white = whiteToMove();
+  if (p == '.' || isWhite(p) != white) return out;
+  const int f = fileOf(from), r = rankOf(from);
+  auto free = [&](const int sq) { return board[sq] == '.'; };
+  auto enemy = [&](const int sq) { return board[sq] != '.' && isWhite(board[sq]) != white; };
+  std::vector<int> pseudo;
+  const char kind = lower(p);
+  if (kind == 'p') {
+    const int dir = white ? 1 : -1;
+    if (onBoard(f, r + dir) && free((r + dir) * 8 + f)) {
+      pseudo.push_back((r + dir) * 8 + f);
+      const bool home = white ? r == 1 : r == 6;
+      if (home && free((r + 2 * dir) * 8 + f)) pseudo.push_back((r + 2 * dir) * 8 + f);
+    }
+    for (const int df : {-1, 1}) {
+      if (!onBoard(f + df, r + dir)) continue;
+      const int to = (r + dir) * 8 + f + df;
+      if (enemy(to) || to == enPassant) pseudo.push_back(to);
+    }
+  } else if (kind == 'n' || kind == 'k') {
+    for (const auto& d : kind == 'n' ? KNIGHT : KING) {
+      if (!onBoard(f + d[0], r + d[1])) continue;
+      const int to = (r + d[1]) * 8 + f + d[0];
+      if (free(to) || enemy(to)) pseudo.push_back(to);
+    }
+    // Castling: the king and rook unmoved, the squares between free, and the
+    // king not in, through or into check.
+    if (kind == 'k' && from == (white ? 4 : 60) && !attacked(board, from, !white)) {
+      const int base = white ? 0 : 56;
+      const int side = white ? 0 : 2;
+      if (castle[side] && free(base + 5) && free(base + 6) && !attacked(board, base + 5, !white)) {
+        pseudo.push_back(base + 6);
+      }
+      if (castle[side + 1] && free(base + 3) && free(base + 2) && free(base + 1) && !attacked(board, base + 3, !white)) {
+        pseudo.push_back(base + 2);
+      }
+    }
+  } else {
+    for (int line = 0; line < 2; line++) {
+      if ((line == 0 && kind == 'b') || (line == 1 && kind == 'r')) continue;
+      for (const auto& d : line ? BISHOP : ROOK) {
+        for (int ff = f + d[0], rr = r + d[1]; onBoard(ff, rr); ff += d[0], rr += d[1]) {
+          const int to = rr * 8 + ff;
+          if (free(to)) {
+            pseudo.push_back(to);
+            continue;
+          }
+          if (enemy(to)) pseudo.push_back(to);
+          break;
+        }
+      }
+    }
+  }
+  // Only moves that do not leave the own king in check.
+  for (const int to : pseudo) {
+    Chess after = *this;
+    after.board[to] = after.board[from];
+    after.board[from] = '.';
+    if (kind == 'p' && to == enPassant) after.board[(white ? to - 8 : to + 8)] = '.';
+    if (!after.inCheck(white)) out.push_back(to);
+  }
+  return out;
+}
+
+bool Chess::play(const std::string& move) {
+  if (move.size() != 4 && move.size() != 5) return false;
+  const int from = (move[1] - '1') * 8 + (move[0] - 'a'), to = (move[3] - '1') * 8 + (move[2] - 'a');
+  if (move[0] < 'a' || move[0] > 'h' || move[2] < 'a' || move[2] > 'h' || move[1] < '1' || move[1] > '8' ||
+      move[3] < '1' || move[3] > '8') {
+    return false;
+  }
+  if (move.size() == 5 && std::string("qrbn").find(move[4]) == std::string::npos) return false;
+  const auto legal = targets(from);
+  if (std::find(legal.begin(), legal.end(), to) == legal.end()) return false;
+  const bool white = whiteToMove();
+  const char p = board[from];
+  const char kind = lower(p);
+  if (kind == 'p' && to == enPassant) board[white ? to - 8 : to + 8] = '.';
+  board[to] = p;
+  board[from] = '.';
+  if (kind == 'p' && (rankOf(to) == 7 || rankOf(to) == 0)) {
+    const char promo = move.size() == 5 ? move[4] : 'q';
+    board[to] = white ? char(promo - 'a' + 'A') : promo;
+  }
+  if (kind == 'k' && std::abs(to - from) == 2) {  // castling: the rook too
+    const bool kingSide = to > from;
+    const int rookFrom = kingSide ? from + 3 : from - 4, rookTo = kingSide ? from + 1 : from - 1;
+    board[rookTo] = board[rookFrom];
+    board[rookFrom] = '.';
+  }
+  // A king or rook that moves, or a rook taken, ends that castling.
+  for (const int sq : {from, to}) {
+    if (sq == 4) castle[0] = castle[1] = false;
+    if (sq == 60) castle[2] = castle[3] = false;
+    if (sq == 7) castle[0] = false;
+    if (sq == 0) castle[1] = false;
+    if (sq == 63) castle[2] = false;
+    if (sq == 56) castle[3] = false;
+  }
+  enPassant = kind == 'p' && std::abs(to - from) == 16 ? (from + to) / 2 : -1;
+  lastFrom = from;
+  lastTo = to;
+  moves++;
+  // The other side has no legal move: checkmate, or stalemate.
+  bool any = false;
+  for (int sq = 0; sq < 64 && !any; sq++) any = !targets(sq).empty();
+  if (!any) winner = inCheck(!white) ? (white ? 1 : 2) : 3;
+  return true;
+}
+
+int GameState::winner() const {
+  if (gaveUp) return gaveUp == 1 ? 2 : 1;
+  return game == Game::Chess ? chess.winner : board.winner;
+}
+
+uint8_t GameState::toMove() const { return turn() == 1 ? opponent : challenger; }
 
 int GameState::playerOf(const uint8_t who) const {
   if (who == 0) return 0;
@@ -208,19 +390,32 @@ bool replay(const Ref game, const std::vector<Entry>& entries, GameState& out) {
   if (!found) return false;
   // Moves can arrive out of order: take move n + 1 wherever it is, until none
   // is left. The first valid one wins (both of a person's devices may answer).
-  for (bool progress = true; progress && !out.board.winner;) {
+  // "x" gives up, from either player at any time (numbered as the next move).
+  for (bool progress = true; progress && !out.winner();) {
     progress = false;
     for (size_t i = 0; i < moves.size(); i++) {
-      if (moves[i].number != out.board.moves + 1) continue;
+      if (moves[i].number != out.moves() + 1) continue;
       const uint8_t who = movers[i];
-      if (out.board.moves == 0) {
+      if (moves[i].move == "x") {
+        const int player = out.playerOf(who);
+        if (!player) continue;
+        out.gaveUp = player;
+        progress = true;
+        break;
+      }
+      if (out.moves() == 0) {
         if (who == out.challenger) continue;
       } else if (who != out.toMove()) {
         continue;
       }
-      const int col = moves[i].move.size() == 1 ? moves[i].move[0] - '0' : -1;
-      if (!out.board.drop(col)) continue;
-      if (out.board.moves == 1) out.opponent = who;
+      bool ok = false;
+      if (out.game == Game::Chess) {
+        ok = out.chess.play(moves[i].move);
+      } else {
+        ok = moves[i].move.size() == 1 && out.board.drop(moves[i].move[0] - '0');
+      }
+      if (!ok) continue;
+      if (out.moves() == 1) out.opponent = who;
       progress = true;
       break;
     }
@@ -229,16 +424,22 @@ bool replay(const Ref game, const std::vector<Entry>& entries, GameState& out) {
 }
 
 bool canMove(const GameState& s, const uint8_t who) {
-  if (s.board.winner || !who) return false;
+  if (s.winner() || !who) return false;
   const uint8_t next = s.toMove();
   return next == who || (next == 0 && s.challenger != who);
 }
 
 std::string status(const GameState& s, const uint8_t me, const std::function<std::string(uint8_t)>& nameOf) {
-  if (s.board.winner == 3) return "Uavgjort";
-  if (s.board.winner) {
-    const uint8_t who = s.board.winner == 1 ? s.opponent : s.challenger;
-    return who == me ? "Du vant!" : nameOf(who) + " vant!";
+  const int winner = s.winner();
+  if (winner == 3) return s.game == Game::Chess ? "Patt: uavgjort" : "Uavgjort";
+  if (winner) {
+    const uint8_t who = winner == 1 ? s.opponent : s.challenger;
+    const char* how = s.gaveUp ? " (den andre ga opp)" : s.game == Game::Chess ? " (sjakkmatt)" : "";
+    return (who == me ? std::string("Du vant!") : nameOf(who) + " vant!") + how;
+  }
+  if (s.game == Game::Chess && s.chess.inCheck(s.chess.whiteToMove())) {
+    const uint8_t next = s.toMove();
+    return next == me ? "Sjakk! Din tur" : "Sjakk! Venter på " + nameOf(next);
   }
   const uint8_t next = s.toMove();
   if (next == 0) return s.challenger == me ? "Venter på at noen tar utfordringen" : "Trykk for å ta utfordringen";

@@ -454,6 +454,15 @@ void story() {
   message(KARI, KARI, NOW - 4 * MIN + 100, mesh::play::writeMove(game, 4, "2"));
   node().markRead(KARI);
 
+  // Ola challenges me to chess; four moves in, it is my turn.
+  message(OLA, OLA, NOW - 30 * MIN, mesh::play::writeGame(mesh::play::Game::Chess), 2);
+  const mesh::play::Ref chess{OLA, others[OLA].counter};
+  write(OLA, NOW - 29 * MIN, mesh::play::writeMove(chess, 1, "e2e4"));
+  message(OLA, OLA, NOW - 28 * MIN, mesh::play::writeMove(chess, 2, "e7e5"), 2);
+  write(OLA, NOW - 27 * MIN, mesh::play::writeMove(chess, 3, "g1f3"));
+  message(OLA, OLA, NOW - 26 * MIN, mesh::play::writeMove(chess, 4, "b8c6"), 2);
+  node().markRead(OLA);
+
   // Ola has not answered yet; the server has it.
   const uint32_t weather = write(OLA, NOW - 3 * MIN, "Har du sjekket værmeldingen for i kveld?");
   ack(mesh::SERVER, NOW - 3 * MIN + 10, weather, mesh::AckState::Stored);
@@ -463,9 +472,9 @@ void story() {
 
 // --- Screens -------------------------------------------------------------------------
 
-// The game Kari started in story().
-mesh::play::Ref kariGame() {
-  for (const auto& m : node().store().load(KARI, 400, mesh::MessageStore::Only::Plays)) {
+// The game started in that DM in story().
+mesh::play::Ref gameIn(const uint8_t conversation) {
+  for (const auto& m : node().store().load(conversation, 400, mesh::MessageStore::Only::Plays)) {
     mesh::play::Play p;
     if (mesh::play::read(m.text, p) && p.kind == mesh::play::Kind::Game) return {m.sender, m.counter};
   }
@@ -552,8 +561,16 @@ int main(int argc, char** argv) {
     });
   }
   {
-    FourInRowActivity game(renderer, mappedInputManager, KARI, kariGame());
+    FourInRowActivity game(renderer, mappedInputManager, KARI, gameIn(KARI));
     show(game, "t5-fire-paa-rad");
+  }
+  {
+    // Chess with Ola: the knight on g1 has moved; I tap the bishop on f1.
+    ChessActivity chess(renderer, mappedInputManager, OLA, gameIn(OLA));
+    show(chess, "t5-sjakk", [](Activity& screen) {
+      sim::tap(14 + 5 * 64 + 32, 218 + 7 * 64 + 32);  // f1, white at the bottom
+      screen.loop();
+    });
   }
   {
     // The group's members, and "Forlat gruppe".

@@ -23,7 +23,7 @@ constexpr size_t MAX_QUESTION = 200;
 constexpr size_t MAX_OPTION = 60;
 
 enum class Kind : char { Poll = 'A', Vote = 'a', Game = 'S', Move = 'm' };
-enum class Game : char { FourInRow = 'F' };
+enum class Game : char { FourInRow = 'F', Chess = 'C' };
 
 // A poll or a game: the device that sent it and its counter.
 struct Ref {
@@ -40,7 +40,7 @@ struct Play {
   Ref of;                            // Vote, Move: the poll or game
   uint8_t option = 0;                // Vote: index into the poll's options
   uint16_t number = 0;               // Move: 1 for the first move
-  std::string move;                  // Move: what the game makes of it ("3": column 3)
+  std::string move;                  // Move: "3" (Fire på rad: column), "e2e4" (chess), "x" (gives up)
 };
 
 inline bool isPlay(const std::string& text) { return !text.empty() && text[0] == MARK; }
@@ -87,14 +87,44 @@ struct FourInRow {
   bool drop(int col);
 };
 
+// Sjakk: the usual rules, moves as "e2e4" ("e7e8q" to promote; a pawn that
+// reaches the end without a letter becomes a queen). White is player 1.
+// No draw by repetition or the 50-move rule: either can give up.
+struct Chess {
+  // Square = rank * 8 + file, a1 = 0, h8 = 63. "PNBRQK" white, "pnbrqk" black, '.' empty.
+  char board[64];
+  bool castle[4] = {true, true, true, true};  // white king side, white queen side, black ...
+  int enPassant = -1;  // the square a pawn skipped last move
+  int moves = 0;
+  int winner = 0;      // 0 playing, 1 white, 2 black, 3 stalemate
+  int lastFrom = -1, lastTo = -1;
+
+  Chess();
+  bool whiteToMove() const { return moves % 2 == 0; }
+  // The squares the piece on from may go to, by the rules (own king not left in check).
+  std::vector<int> targets(int from) const;
+  bool inCheck(bool white) const;
+  // "e2e4" style; false when it is not a legal move now.
+  bool play(const std::string& move);
+
+  static std::string squareName(int square);  // 12 -> "e2"
+};
+
 // A game as the moves so far leave it. The one who takes the challenge makes
-// the first move and is player 1; the challenger is player 2. In a group,
-// whoever moves first takes it.
+// the first move and is player 1 (white in chess); the challenger is player 2.
+// In a group, whoever moves first takes it.
 struct GameState {
   Game game = Game::FourInRow;
   uint8_t challenger = 0;  // person
   uint8_t opponent = 0;    // person; 0 until someone has moved
   FourInRow board;
+  Chess chess;
+  int gaveUp = 0;  // the player who gave up, 0 for none
+
+  int moves() const { return game == Game::Chess ? chess.moves : board.moves; }
+  // 0 playing, 1 or 2 won, 3 a draw.
+  int winner() const;
+  int turn() const { return moves() % 2 + 1; }
 
   // The person whose move it is, or 0 when anyone but the challenger may take it.
   uint8_t toMove() const;

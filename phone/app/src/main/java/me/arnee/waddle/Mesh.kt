@@ -26,7 +26,8 @@ object Mesh {
     @JvmStatic external fun conversations(): String
     /** [{"mine", "from", "text", "time", "warning", "state"}], a poll or game also
      *  {"sender", "counter", "poll": {"question", "options": [{"text", "count", "mine", "names"}]}}
-     *  or {..., "game": {"status", "canMove", "board", "players"}}; votes and moves are left out. */
+     *  or {..., "game": {"kind", "status", "canMove", "over", "mine", "board", "players", "flipped"}};
+     *  votes and moves are left out. */
     @JvmStatic external fun chat(conv: Int): String
     @JvmStatic external fun title(conv: Int): String
     @JvmStatic external fun canWrite(conv: Int): Boolean
@@ -58,7 +59,8 @@ object Mesh {
     /** Polls and Fire på rad (lib/WaddleMesh MeshPlay.h); options one per line. */
     @JvmStatic external fun startPoll(conv: Int, question: String, options: String): Boolean
     @JvmStatic external fun vote(conv: Int, sender: Int, counter: Long, option: Int): Boolean
-    @JvmStatic external fun startGame(conv: Int): Boolean
-    /** Drops my piece in column [col] (0-6) of the game, when it is my move. */
-    @JvmStatic external fun move(conv: Int, sender: Int, counter: Long, col: Int): Boolean
+    /** [kind]: "chess" or "fourinrow". */
+    @JvmStatic external fun startGame(conv: Int, kind: String): Boolean
+    /** My next move: a column "0"-"6", "e2e4" (chess) or "x" (give up). */
+    @JvmStatic external fun move(conv: Int, sender: Int, counter: Long, move: String): Boolean
 }
