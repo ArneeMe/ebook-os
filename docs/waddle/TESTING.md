@@ -123,6 +123,9 @@ Polls and Fire på rad:
 - [ ] "+" → Sjakk: the other plays white; a tapped piece shows where it may go,
       "Flytt" sends it, castling and promotion work, and checkmate ends it.
       "Gi opp" (tap twice) ends it too. The same game plays from the phone.
+- [ ] "+" → Senk skipet: "Ditt hav" shows the same ships on the T5 and the
+      phone; a shot shows bom, treff or senket at the next turn, and the last
+      ship sunk ends it.
 
 Joining (protocol 3: up to 32 members):
 - [ ] `waddle mesh invite Ola` prints a `waddle://join/…` link and how Ola runs it.

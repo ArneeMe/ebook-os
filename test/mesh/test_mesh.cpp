@@ -853,6 +853,37 @@ static void testPlay() {
   CHECK(replay(cg, ce, s) && s.game == Game::Chess && s.moves() == 2 && s.toMove() == 2 && !s.winner());
   ce.push_back({2, 3, &quit});
   CHECK(replay(cg, ce, s) && s.winner() == 2 && s.gaveUp == 1);
+
+  // Senk skipet: layouts are the same for the same secret and game, and differ otherwise.
+  uint8_t secretA[32], secretB[32];
+  memset(secretA, 1, 32);
+  memset(secretB, 2, 32);
+  const Ref sg{1, 60};
+  const ShipLayout la = shipLayout(secretA, sg), lb = shipLayout(secretB, sg);
+  CHECK(memcmp(la.cell, shipLayout(secretA, sg).cell, 64) == 0 && memcmp(la.cell, lb.cell, 64) != 0);
+  int cells = 0;
+  for (const uint8_t c : la.cell) cells += c != 0;
+  CHECK(cells == 4 + 3 + 2 + 2);
+  // Player 1 (B's layout) fires at every square of A's ships; A answers from its layout.
+  Ships sea;
+  int aimA = 0;  // where player 2 fires: water in B's sea, so A never wins
+  for (int round = 0; round < 64 && !sea.winner; round++) {
+    int target = -1;
+    for (int sq = 0; sq < 64 && target < 0; sq++) {
+      bool fired = false;
+      for (const auto& f : sea.shots[0]) fired = fired || f.square == sq;
+      if (la.cell[sq] && !fired) target = sq;
+    }
+    CHECK(sea.play(1, shipsMove(sea, 1, lb, target)));
+    if (sea.winner) break;
+    while (lb.cell[aimA]) aimA++;
+    const std::string answer = shipsMove(sea, 2, la, aimA++);
+    CHECK(sea.play(2, answer));
+  }
+  CHECK(sea.winner == 1 && sea.shots[0].back().result == 's');
+  CHECK(!sea.play(1, "hz9"));
+  Ships fresh;
+  CHECK(!fresh.play(1, "ha1") && fresh.play(1, "-a1") && !fresh.play(2, "-b2") && !fresh.play(2, "ha1x"));
 }
 
 int main(int argc, char** argv) {

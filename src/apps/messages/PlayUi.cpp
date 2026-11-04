@@ -9,6 +9,7 @@
 #include "MessagesActivity.h"
 #include "core/MappedInputManager.h"
 #include "core/fontIds.h"
+#include "services/mesh/MeshConfig.h"
 #include "services/mesh/MeshNode.h"
 
 using mesh::play::Entry;
@@ -93,6 +94,39 @@ const char* letterOf(const char piece) {
     case 'b': return "L";
     case 'n': return "S";
     default: return "B";
+  }
+}
+
+// A sea of Senk skipet: a1 at the bottom left. ships (optional) shades my own
+// ships; shots are drawn as a dot (miss), a cross (hit), filled (sunk) or a
+// ring (not answered yet).
+void drawSea(const GfxRenderer& renderer, const int x, const int y, const int cell,
+             const std::vector<mesh::play::Ships::Shot>& shots, const mesh::play::ShipLayout* ships = nullptr,
+             const int selected = -1) {
+  constexpr int N = mesh::play::Ships::SIZE;
+  renderer.drawRect(x - 2, y - 2, N * cell + 4, N * cell + 4, 2, true);
+  for (int sq = 0; sq < N * N; sq++) {
+    const int sx = x + (sq % N) * cell, sy = y + (N - 1 - sq / N) * cell;
+    renderer.drawRect(sx, sy, cell, cell, 1, true);
+    if (ships && ships->cell[sq]) renderer.fillRectDither(sx + 1, sy + 1, cell - 2, cell - 2, Color::LightGray);
+    if (sq == selected) renderer.drawRect(sx + 1, sy + 1, cell - 2, cell - 2, std::max(3, cell / 12), true);
+  }
+  for (const auto& s : shots) {
+    const int sx = x + (s.square % N) * cell, sy = y + (N - 1 - s.square / N) * cell;
+    const int m = cell / 4;
+    // On my own sea the answer is my layout; on theirs, what they answered.
+    const char result = ships ? (ships->cell[s.square] ? 'h' : 'm') : s.result;
+    if (result == 'm') {
+      const int dot = std::max(4, cell / 6);
+      renderer.fillRoundedRect(sx + (cell - dot) / 2, sy + (cell - dot) / 2, dot, dot, dot / 2, Color::Black);
+    } else if (result == 'h' || (ships && result == 's')) {
+      renderer.drawLine(sx + m, sy + m, sx + cell - m, sy + cell - m, std::max(2, cell / 10), true);
+      renderer.drawLine(sx + cell - m, sy + m, sx + m, sy + cell - m, std::max(2, cell / 10), true);
+    } else if (result == 's') {
+      renderer.fillRect(sx + 2, sy + 2, cell - 4, cell - 4, true);
+    } else {
+      renderer.drawRoundedRect(sx + m, sy + m, cell - 2 * m, cell - 2 * m, 2, (cell - 2 * m) / 2, true);
+    }
   }
 }
 
@@ -210,15 +244,21 @@ void drawCard(const GfxRenderer& renderer, const mesh::ChatMessage& m, const std
     const int h = gameHeight();
     const bool chess = s.game == mesh::play::Game::Chess;
     renderer.drawRoundedRect(x, y, width, h, 2, 16, true);
+    const bool ships = s.game == mesh::play::Game::Ships;
     if (chess) {
       drawChess(renderer, s.chess, x + PAD + 4, y + PAD + 4, mesh::play::FourInRow::ROWS * MINI / 8,
                 s.playerOf(me()) == 2);
+    } else if (ships) {
+      // My shots at the other's sea (or player 1's, for someone watching).
+      const int player = s.playerOf(me()) ? s.playerOf(me()) : 1;
+      drawSea(renderer, x + PAD + 4, y + PAD + 4, mesh::play::FourInRow::ROWS * MINI / 8, s.ships.shots[player - 1]);
     } else {
       drawBoard(renderer, s.board, x + PAD + 4, y + PAD + 4, MINI);
     }
     const int tx = x + PAD + mesh::play::FourInRow::COLS * MINI + 28;
     const int tw = x + width - PAD - tx;
-    renderer.drawText(UI_12_FONT_ID, tx, y + PAD, chess ? "Sjakk" : "Fire på rad", true, EpdFontFamily::BOLD);
+    renderer.drawText(UI_12_FONT_ID, tx, y + PAD, chess ? "Sjakk" : ships ? "Senk skipet" : "Fire på rad", true,
+                      EpdFontFamily::BOLD);
     const std::string vs = s.opponent ? nameOf(s.opponent) + " mot " + nameOf(s.challenger)
                                       : nameOf(s.challenger) + " utfordrer";
     renderer.drawText(UI_10_FONT_ID, tx, y + PAD + lineH + 4, renderer.truncatedText(UI_10_FONT_ID, vs.c_str(), tw).c_str());
@@ -235,6 +275,9 @@ std::unique_ptr<Activity> openGame(GfxRenderer& renderer, MappedInputManager& ma
                                    const Hit& hit) {
   if (hit.game == mesh::play::Game::Chess) {
     return std::make_unique<ChessActivity>(renderer, mappedInput, conversation, hit.ref);
+  }
+  if (hit.game == mesh::play::Game::Ships) {
+    return std::make_unique<ShipsActivity>(renderer, mappedInput, conversation, hit.ref);
   }
   return std::make_unique<FourInRowActivity>(renderer, mappedInput, conversation, hit.ref);
 }
@@ -488,6 +531,137 @@ void ChessActivity::render(RenderLock&&) {
       renderer.drawRoundedRect(28 + bw, buttonY, bw, 70, 2, 14, true);
       lw = renderer.getTextWidth(UI_12_FONT_ID, giveUp, EpdFontFamily::BOLD);
       renderer.drawText(UI_12_FONT_ID, 28 + bw + (bw - lw) / 2, buttonY + 20, giveUp, true, EpdFontFamily::BOLD);
+    }
+  }
+  renderer.displayBuffer(HalDisplay::FAST_REFRESH);
+}
+
+// --- Senk skipet -------------------------------------------------------------------
+
+ShipsActivity::ShipsActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, const uint8_t conversation,
+                             const Ref game)
+    : Activity("Ships", renderer, mappedInput), conversation(conversation), game(game) {}
+
+void ShipsActivity::reload() {
+  const auto plays = node().store().load(conversation, 400, mesh::MessageStore::Only::Plays);
+  GameState loaded;
+  const bool found = mesh::play::replay(game, playui::entries(plays), loaded);
+  // My ships come from my secret, the same on my unit and my phone.
+  const auto layout = mesh::play::shipLayout(mesh::identity().secret, game);
+  RenderLock lock(*this);
+  state = loaded;
+  known = found;
+  mine = layout;
+}
+
+void ShipsActivity::onEnter() {
+  Activity::onEnter();
+  reload();
+  requestUpdate();
+}
+
+bool ShipsActivity::myTurn() const { return known && mesh::play::canMove(state, me()); }
+
+void ShipsActivity::send(const std::string& move) {
+  if (node().sendText(conversation, mesh::play::writeMove(game, uint16_t(state.moves() + 1), move))) reload();
+  target = -1;
+  sure = false;
+  requestUpdate();
+}
+
+void ShipsActivity::loop() {
+  using Button = MappedInputManager::Button;
+  constexpr int N = mesh::play::Ships::SIZE;
+  if (mappedInput.wasReleased(Button::Back) || mappedInput.wasHomeGesture()) {
+    activityManager.replaceActivity(std::make_unique<ChatActivity>(renderer, mappedInput, conversation));
+    return;
+  }
+  int x = 0, y = 0;
+  if (mappedInput.wasScreenTapped(x, y)) {
+    // The buttons beside my own sea: "Skyt" above, "Gi opp" below.
+    const int bx = 20 + N * 26 + 24;
+    if (x >= bx && y >= buttonY && y < buttonY + 160 && known && !state.winner()) {
+      const int player = state.moves() == 0 ? 1 : state.playerOf(me());
+      if (y >= buttonY + 90) {
+        if (sure && state.playerOf(me())) {
+          send("x");
+        } else {
+          sure = true;
+          requestUpdate();
+        }
+      } else if (target >= 0 && myTurn()) {
+        send(mesh::play::shipsMove(state.ships, player, mine, target));
+      }
+      return;
+    }
+    sure = false;
+    if (myTurn() && x >= boardX && y >= boardY && x < boardX + N * cell && y < boardY + N * cell) {
+      const int sq = (N - 1 - (y - boardY) / cell) * N + (x - boardX) / cell;
+      const int player = state.moves() == 0 ? 1 : state.playerOf(me());
+      bool fired = false;
+      for (const auto& s : state.ships.shots[player - 1]) fired = fired || s.square == sq;
+      target = fired ? -1 : sq;
+    }
+    requestUpdate();
+  }
+  if (node().changes() != shownChanges) {
+    shownChanges = node().changes();
+    reload();
+    requestUpdate();
+  }
+}
+
+void ShipsActivity::render(RenderLock&&) {
+  constexpr int N = mesh::play::Ships::SIZE;
+  const int width = renderer.getScreenWidth();
+  renderer.clearScreen();
+  int y = meshui::drawTitle(renderer, "Senk skipet");
+  if (!known) {
+    renderer.drawCenteredText(UI_12_FONT_ID, y + 60, "Fant ikke spillet");
+    renderer.displayBuffer();
+    return;
+  }
+  // Before the first move, the one who takes it will be player 1.
+  const int player = state.playerOf(me()) ? state.playerOf(me()) : 1;
+  const auto& myShots = state.ships.shots[player - 1];
+  const auto& theirShots = state.ships.shots[2 - player];
+  renderer.drawCenteredText(UI_12_FONT_ID, y + 4, playui::gameStatus(state).c_str(), true, EpdFontFamily::BOLD);
+  std::string last;
+  if (!myShots.empty() && myShots.back().result != '?') {
+    const char r = myShots.back().result;
+    last = std::string("Ditt siste skudd: ") + (r == 'm' ? "bom" : r == 'h' ? "treff!" : "senket et skip!");
+  }
+  if (!last.empty()) renderer.drawCenteredText(UI_10_FONT_ID, y + 44, last.c_str());
+  y += 80;
+
+  cell = (width - 76) / N;
+  boardX = (width - N * cell) / 2;
+  boardY = y;
+  drawSea(renderer, boardX, boardY, cell, myShots, nullptr, target);
+
+  // My own sea, small, with their shots; the buttons beside it.
+  const int small = 26;
+  const int seaY = boardY + N * cell + 40;
+  renderer.drawText(SMALL_FONT_ID, 20, seaY - 26, "DITT HAV", true, EpdFontFamily::BOLD);
+  drawSea(renderer, 20, seaY, small, theirShots, &mine);
+  const int bx = 20 + N * small + 24, bw = width - bx - 20;
+  buttonY = seaY;
+  if (!state.winner()) {
+    const bool ready = target >= 0 && myTurn();
+    const std::string label = ready ? "Skyt " + std::string{char('a' + target % N), char('1' + target / N)}
+                                    : myTurn() ? "Velg en rute" : "Ikke din tur";
+    if (ready) {
+      renderer.fillRoundedRect(bx, buttonY, bw, 70, 14, Color::Black);
+    } else {
+      renderer.drawRoundedRect(bx, buttonY, bw, 70, 2, 14, true);
+    }
+    int lw = renderer.getTextWidth(UI_12_FONT_ID, label.c_str(), EpdFontFamily::BOLD);
+    renderer.drawText(UI_12_FONT_ID, bx + (bw - lw) / 2, buttonY + 20, label.c_str(), !ready, EpdFontFamily::BOLD);
+    if (state.playerOf(me())) {
+      const char* giveUp = sure ? "Sikker?" : "Gi opp";
+      renderer.drawRoundedRect(bx, buttonY + 90, bw, 70, 2, 14, true);
+      lw = renderer.getTextWidth(UI_12_FONT_ID, giveUp, EpdFontFamily::BOLD);
+      renderer.drawText(UI_12_FONT_ID, bx + (bw - lw) / 2, buttonY + 110, giveUp, true, EpdFontFamily::BOLD);
     }
   }
   renderer.displayBuffer(HalDisplay::FAST_REFRESH);

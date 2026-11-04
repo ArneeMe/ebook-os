@@ -132,7 +132,27 @@ void addPlay(JsonObject o, const mesh::ChatMessage& m, const std::vector<mesh::p
     game["over"] = s.winner() != 0;
     game["mine"] = s.playerOf(me) != 0;
     std::string board;
-    if (s.game == mesh::play::Game::Chess) {
+    if (s.game == mesh::play::Game::Ships) {
+      // Rows from the top. target: my shots ('.' not fired, 'm', 'h', 's', '?');
+      // sea: my ships ('o') and the other's shots ('x' hit, 'm' miss).
+      const int player = s.playerOf(me) ? s.playerOf(me) : 1;
+      const auto layout = mesh::play::shipLayout(mesh::identity().secret, ref);
+      std::string target(64, '.'), sea(64, '.');
+      for (const auto& shot : s.ships.shots[player - 1]) target[size_t(shot.square)] = shot.result;
+      for (int sq = 0; sq < 64; sq++) {
+        if (layout.cell[sq]) sea[size_t(sq)] = 'o';
+      }
+      for (const auto& shot : s.ships.shots[2 - player]) sea[size_t(shot.square)] = layout.cell[shot.square] ? 'x' : 'm';
+      auto top = [](const std::string& b) {
+        std::string out;
+        for (int row = 7; row >= 0; row--) out += b.substr(size_t(row * 8), 8);
+        return out;
+      };
+      board = top(target);
+      game["sea"] = top(sea);
+      game["kind"] = "ships";
+      game["players"] = (s.opponent ? nameOrDu(s.opponent) : std::string("?")) + " mot " + nameOrDu(s.challenger);
+    } else if (s.game == mesh::play::Game::Chess) {
       // Rows from the top as the player sees them (black at the bottom when flipped).
       const bool flipped = s.challenger == me;
       for (int row = 0; row < 8; row++) {
@@ -379,12 +399,15 @@ JNIEXPORT jboolean JNICALL Java_me_arnee_waddle_Mesh_vote(JNIEnv*, jclass, jint 
 // kind: "chess" or "fourinrow".
 JNIEXPORT jboolean JNICALL Java_me_arnee_waddle_Mesh_startGame(JNIEnv* env, jclass, jint conv, jstring kind) {
   tick();
-  const auto game = str(env, kind) == "chess" ? mesh::play::Game::Chess : mesh::play::Game::FourInRow;
+  const std::string k = str(env, kind);
+  const auto game = k == "chess"   ? mesh::play::Game::Chess
+                    : k == "ships" ? mesh::play::Game::Ships
+                                   : mesh::play::Game::FourInRow;
   return conv >= 0 && conv < mesh::CONVERSATIONS && node().sendText(uint8_t(conv), mesh::play::writeGame(game));
 }
 
-// My next move in a game: a column "0"-"6" (Fire på rad), "e2e4" (chess) or
-// "x" (give up). Refused when it is not my move or not a legal one.
+// My next move in a game: a column "0"-"6" (Fire på rad), "e2e4" (chess), a
+// square "d4" (Senk skipet) or "x" (give up). Refused when it is not my move or not a legal one.
 JNIEXPORT jboolean JNICALL Java_me_arnee_waddle_Mesh_move(JNIEnv* env, jclass, jint conv, jint sender, jlong counter,
                                                             jstring move) {
   tick();
@@ -392,11 +415,18 @@ JNIEXPORT jboolean JNICALL Java_me_arnee_waddle_Mesh_move(JNIEnv* env, jclass, j
   const mesh::play::Ref ref{uint8_t(sender), uint32_t(counter)};
   const auto plays = playsOf(uint8_t(conv));
   mesh::play::GameState s;
-  const std::string m = str(env, move);
   const uint8_t me = node().network().me;
   if (!mesh::play::replay(ref, entriesOf(plays), s) || s.winner()) return false;
+  std::string m = str(env, move);
   if (m == "x") {
     if (!s.playerOf(me)) return false;
+  } else if (s.game == mesh::play::Game::Ships) {
+    // A square ("d4"): the answer to their last shot comes from my own ships.
+    if (!mesh::play::canMove(s, me) || m.size() != 2 || m[0] < 'a' || m[0] > 'h' || m[1] < '1' || m[1] > '8') return false;
+    const int player = s.moves() == 0 ? 1 : s.playerOf(me);
+    m = mesh::play::shipsMove(s.ships, player, mesh::play::shipLayout(mesh::identity().secret, ref),
+                              (m[1] - '1') * 8 + (m[0] - 'a'));
+    if (!s.ships.play(player, m)) return false;
   } else {
     if (!mesh::play::canMove(s, me)) return false;
     const bool ok = s.game == mesh::play::Game::Chess ? s.chess.play(m) : m.size() == 1 && s.board.drop(m[0] - '0');

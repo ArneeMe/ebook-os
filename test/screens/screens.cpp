@@ -463,6 +463,26 @@ void story() {
   message(OLA, OLA, NOW - 26 * MIN, mesh::play::writeMove(chess, 4, "b8c6"), 2);
   node().markRead(OLA);
 
+  // Per and I play Senk skipet: I took it, and we have fired a few times each.
+  message(PER, PER, NOW - 25 * MIN, mesh::play::writeGame(mesh::play::Game::Ships));
+  const mesh::play::Ref sea{PER, others[PER].counter};
+  {
+    // Per's answers come from his own ships, made as his unit makes them.
+    const auto perShips = mesh::play::shipLayout(others[PER].secret, sea);
+    const auto myShips = mesh::play::shipLayout(mesh::identity().secret, sea);
+    mesh::play::Ships game;
+    const int mine[] = {27, 28, 29, 44, 10}, his[] = {0, 9, 18, 36, 63};
+    for (int i = 0; i < 5; i++) {
+      const std::string a = mesh::play::shipsMove(game, 1, myShips, mine[i]);
+      game.play(1, a);
+      write(PER, NOW - 24 * MIN + i * 60, mesh::play::writeMove(sea, uint16_t(game.moves), a));
+      const std::string b = mesh::play::shipsMove(game, 2, perShips, his[i]);
+      game.play(2, b);
+      message(PER, PER, NOW - 24 * MIN + i * 60 + 30, mesh::play::writeMove(sea, uint16_t(game.moves), b));
+    }
+  }
+  node().markRead(PER);
+
   // Ola has not answered yet; the server has it.
   const uint32_t weather = write(OLA, NOW - 3 * MIN, "Har du sjekket værmeldingen for i kveld?");
   ack(mesh::SERVER, NOW - 3 * MIN + 10, weather, mesh::AckState::Stored);
@@ -563,6 +583,11 @@ int main(int argc, char** argv) {
   {
     FourInRowActivity game(renderer, mappedInputManager, KARI, gameIn(KARI));
     show(game, "t5-fire-paa-rad");
+  }
+  {
+    // Senk skipet with Per, my turn.
+    ShipsActivity ships(renderer, mappedInputManager, PER, gameIn(PER));
+    show(ships, "t5-senk-skipet");
   }
   {
     // Chess with Ola: the knight on g1 has moved; I tap the bishop on f1.
