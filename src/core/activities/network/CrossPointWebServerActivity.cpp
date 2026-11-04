@@ -415,6 +415,12 @@ void CrossPointWebServerActivity::loop() {
       onGoHome();
       return;
     }
+    // The setup code matched: tapping it (or OK) lets the tool or phone go on.
+    int tapX = 0, tapY = 0;
+    if (!shownNote.empty() && (mappedInput.wasReleased(MappedInputManager::Button::Confirm) ||
+                               (mappedInput.wasScreenTapped(tapX, tapY) && tapY >= noteY - 20))) {
+      product::approveTransferNote();
+    }
   }
 }
 
@@ -513,9 +519,17 @@ void CrossPointWebServerActivity::renderServerRunning() const {
     startY += height10 + 5;
   }
 
-  // The mesh unit's setup code (product::transferNote()).
+  // The mesh unit's setup code (product::transferNote()), and what to do with it.
   const std::string note = product::transferNote();
-  if (!note.empty()) renderer.drawCenteredText(UI_12_FONT_ID, startY + 10, note.c_str(), true, EpdFontFamily::BOLD);
+  noteY = startY;
+  if (!note.empty()) {
+    const size_t cut = note.find('\n');
+    renderer.drawCenteredText(UI_12_FONT_ID, startY + 10, note.substr(0, cut).c_str(), true, EpdFontFamily::BOLD);
+    if (cut != std::string::npos) {
+      renderer.drawCenteredText(UI_10_FONT_ID, startY + 10 + renderer.getLineHeight(UI_12_FONT_ID) + 6,
+                                note.substr(cut + 1).c_str());
+    }
+  }
 
   const auto labels = mappedInput.mapLabels(tr(STR_EXIT), "", "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);

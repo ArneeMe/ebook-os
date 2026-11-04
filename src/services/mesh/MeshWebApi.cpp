@@ -27,6 +27,8 @@ bool networkChanged = false;
 }  // namespace
 
 const char* setupCode() { return pairing::code(); }
+bool setupApproved() { return pairing::approved(); }
+void approveSetup() { pairing::approve(); }
 
 bool takeNetworkChanged() {
   const bool changed = networkChanged;
@@ -128,6 +130,10 @@ void registerRoutes(WebServer& server) {
   // The member's phone, after the code on this screen matched the phone's: a
   // sealed copy of this unit's keys and network (protocol/PROTOCOL.md, "Devices").
   server.on("/api/mesh/phone", HTTP_POST, [&server] {
+    if (pairing::waitingForApproval()) {
+      server.send(423, "text/plain", "trykk på koden på T5-skjermen for å godkjenne");
+      return;
+    }
     if (openFromTool(server.arg("plain")).empty()) {
       server.send(400, "text/plain", "ikke forseglet");
       return;
@@ -147,6 +153,10 @@ void registerRoutes(WebServer& server) {
   // `waddle mesh join`, step 1: the invitation (sealed by the tool) in, the
   // sealed request for the admin out (protocol/PROTOCOL.md, "Joining").
   server.on("/api/mesh/join", HTTP_POST, [&server] {
+    if (pairing::waitingForApproval()) {
+      server.send(423, "text/plain", "trykk på koden på T5-skjermen for å godkjenne");
+      return;
+    }
     const std::string plain = openFromTool(server.arg("plain"));
     JsonDocument in;
     if (plain.empty() || deserializeJson(in, plain)) {

@@ -58,6 +58,7 @@ class CrossPointWebServerActivity final : public Activity {
   // Cached signal-strength bracket (0..4) for the WiFi indicator.
   int lastWifiBars = 0;
   std::string shownNote;  // product::transferNote() as last drawn
+  mutable int noteY = 0;  // where it is drawn; taps below it approve it
 
   void renderServerRunning() const;
   void renderWifiIndicator(int subHeaderTop) const;

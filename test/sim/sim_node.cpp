@@ -353,6 +353,10 @@ int main(int argc, char** argv) {
       in >> tool >> nonce;
       std::cout << (mesh::pairing::reveal(tool, nonce) ? std::string("code ") + mesh::pairing::code() : "refused")
                 << "\n";
+    } else if (cmd == "pair-approve") {
+      // The person taps the code on the unit's screen.
+      mesh::pairing::approve();
+      std::cout << "approved\n";
     } else if (cmd == "pair-phone") {
       std::string requestHex;
       in >> requestHex;

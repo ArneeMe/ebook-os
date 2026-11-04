@@ -35,8 +35,12 @@ const char* firmwareName() { return "waddleos-t5.bin"; }
 std::string transferNote() {
   // Shown once `waddle mesh` on a computer has started setup.
   const char* code = mesh::web::setupCode();
-  return code ? std::string("Oppsettkode: ") + code : "";
+  if (!code) return "";
+  return std::string("Oppsettkode: ") + code +
+         (mesh::web::setupApproved() ? "\nGodkjent" : "\nTrykk her hvis koden er lik på den andre skjermen");
 }
+
+void approveTransferNote() { mesh::web::approveSetup(); }
 
 namespace {
 // Holding the user button (beside the screen) this long starts an SOS from anywhere.
