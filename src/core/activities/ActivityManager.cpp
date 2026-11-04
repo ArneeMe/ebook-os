@@ -13,7 +13,7 @@
 #include <algorithm>
 
 #include "Activity.h"
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "core/HapticFeedback.h"
 #include "core/activities/boot_sleep/BootActivity.h"
 #include "core/activities/boot_sleep/SleepActivity.h"
@@ -21,7 +21,7 @@
 #include "core/activities/boot_sleep/CrashActivity.h"
 #include "apps/library/FileBrowserActivity.h"
 #include "apps/library/LibraryListActivity.h"
-#include "core/activities/network/CrossPointWebServerActivity.h"
+#include "core/activities/network/WaddleWebServerActivity.h"
 #include "core/activities/network/UsbDriveActivity.h"
 #include "apps/reader/ReaderActivity.h"
 #include "apps/reader/RemoteTurnGate.h"
@@ -47,7 +47,7 @@ void ActivityManager::begin() {
 #else
   constexpr BaseType_t renderTaskCore = 0;
 #endif
-#if CROSSPOINT_VECTOR_FONTS
+#if WADDLE_VECTOR_FONTS
   // FreeType rasterization runs on this task, and the deepest observed chain
   // is a glyph fault DURING LAYOUT: expat + parser + line-layout frames
   // (~3.5KB on Xtensa) with the scan converter's FT_RENDER_POOL_SIZE (4KB)
@@ -269,13 +269,13 @@ void ActivityManager::replaceActivity(std::unique_ptr<Activity>&& newActivity) {
 }
 
 void ActivityManager::goToFileTransfer() {
-  replaceActivity(std::make_unique<CrossPointWebServerActivity>(renderer, mappedInput));
+  replaceActivity(std::make_unique<WaddleWebServerActivity>(renderer, mappedInput));
 }
 
 void ActivityManager::goToJoinNetwork() {
   // Post heap-defrag reboot: enter the web-server activity straight in Join
   // Network mode (skips mode selection, does not reboot again).
-  replaceActivity(std::make_unique<CrossPointWebServerActivity>(renderer, mappedInput, /*startInJoinNetwork=*/true));
+  replaceActivity(std::make_unique<WaddleWebServerActivity>(renderer, mappedInput, /*startInJoinNetwork=*/true));
 }
 
 void ActivityManager::goToUsbDrive() {

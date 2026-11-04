@@ -13,7 +13,7 @@
 
 #include "apps/reader/util/DictionaryRegistry.h"
 #include "apps/reader/util/ParagraphIndentMigration.h"
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "core/ReaderFontSizes.h"
 #include "core/SdCardFontSystem.h"
 #include "core/SettingsList.h"
@@ -501,7 +501,7 @@ ReaderSettings::StatusBarSpec ReaderSettings::statusBarSpec() const {
   spec.showBookProgressPercent = statusBarBookProgressPercentage != 0;
   spec.titleMode = statusBarTitle;
   spec.showBattery = statusBarBattery != 0;
-  spec.showBatteryPercent = SETTINGS.hideBatteryPercentage == CrossPointSettings::HIDE_NEVER;
+  spec.showBatteryPercent = SETTINGS.hideBatteryPercentage == WaddleSettings::HIDE_NEVER;
   spec.clockMode = statusBarClock;
   spec.clock12h = SETTINGS.clockFormat == 1;
   spec.progressBarMode = statusBarProgressBar;

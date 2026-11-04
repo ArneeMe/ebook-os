@@ -6,7 +6,7 @@
 #include <HalGPIO.h>
 #include <I18n.h>
 
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "ReaderUtils.h"
 // ReaderUtils.h pulls in ActivityManager.h, which only forward-declares Activity while holding
 // std::unique_ptr<Activity> members. Destroying that unique_ptr needs the complete type, so the

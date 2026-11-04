@@ -102,7 +102,7 @@ bool sync() {
     return false;
   }
   // Same file name as the old paper, so drop the old paper's layout cache.
-  Epub(EPUB_PATH, "/.crosspoint").clearCache();
+  Epub(EPUB_PATH, "/.waddleos").clearCache();
   return done(Storage.replaceFile(NEW_LIST_PATH, LIST_PATH));
 }
 
@@ -156,7 +156,7 @@ void openStory(const Paper& paper, std::vector<std::string>& readIds, const int 
 
   // Chapter 0 is the front page, so story i is chapter i + 1. Saving it as the
   // reading position makes the reader open there.
-  Epub epub(EPUB_PATH, "/.crosspoint");
+  Epub epub(EPUB_PATH, "/.waddleos");
   epub.setupCacheDir();
   EpubReaderUtils::saveProgress(epub, index + 1, 0, 0);
   activityManager.goToReader(EPUB_PATH);

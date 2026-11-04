@@ -42,7 +42,7 @@ Arne opened a screen. Nothing runs in the background or during sleep.
   `t5s3-waddle` (the mesh unit, LilyGO T5 E-Paper S3 Pro: 960×540 e-ink,
   SX1262 868 MHz LoRa, GPS) and `heltec-gateway` (Heltec V4 on the Pi's USB).
   `WADDLE=1`, `WADDLE_PRIVATE=1` and `WADDLE_OWNER_NAME="Arne"` are always set.
-  `CROSSPOINT_BOARD_NAME` tags each image, so a device refuses the other's firmware.
+  `WADDLE_BOARD_NAME` tags each image, so a device refuses the other's firmware.
 - **Compiling:** in a cloud session run `bash scripts/cloud-setup.sh` once,
   then `pio run -e x4pro-waddle`. GitHub Actions
   (`.github/workflows/waddle-build.yml`) also builds every PR;
@@ -122,7 +122,7 @@ SD card font system lives in core). Untangle those when the second device needs 
 | `core/waddle/WaddleDraw.*` | Penguin, music notes, speaker icon, pixel font for the clock, boot/sleep splash |
 | `core/waddle/WaddlePenguin.h`, `products/x4pro/WaddleWeatherIcons.h` | Generated bitmaps (`assets/waddle/*.py`) |
 
-### Hooks in CrossPoint code
+### Hooks in Waddle code
 
 These upstream files call into WaddleOS code. Upstream is no longer followed,
 so they may be edited freely.
@@ -135,18 +135,18 @@ so they may be edited freely.
 | `core/activities/boot_sleep/*` | Penguin boot and sleep screens; a book sleeps on its page with a sleeping penguin |
 | `core/WaddleMain.cpp` | `enterDeepSleep()`: keep the page only when sleeping from the reader; `product::sleep()` lets the mesh unit light-sleep instead |
 | `core/activities/settings/SettingsActivity.cpp` | "Oppdater fastvare" opens `UpdateActivity` |
-| `core/network/CrossPointWebServer.cpp` | Registers `/api/firmware/apply`; reports `waddle::version()` |
+| `core/network/WaddleWebServer.cpp` | Registers `/api/firmware/apply`; reports `waddle::version()` |
 | `lib/hal/HalClock.*` | `setUtc()`, used by Hjem to set the clock from arnee.me |
 
 ## Settings
 
 One settings system in core, and each app brings its own settings.
 
-- **Storage:** everything is in `/.crosspoint/settings.json`, one key per
+- **Storage:** everything is in `/.waddleos/settings.json`, one key per
   setting. A device reads the keys it knows and ignores the rest, so the same
   file works on every device. Never rename a key that has shipped; new app keys
   get a prefix (`mesh.channel`).
-- **Core** (`core/CrossPointSettings.*`, `SETTINGS`): settings every device has
+- **Core** (`core/WaddleSettings.*`, `SETTINGS`): settings every device has
   (sleep, night mode, language, clock, buttons, frontlight, Bluetooth).
   `core/SettingsList.cpp` lists their rows. Hardware-only rows are shown only
   where the board has the hardware (`BoardConfig`, `FREEINK_CAP_*`).
@@ -285,8 +285,8 @@ Read `.agents/rules/ui-activities.md` for details. The short version:
 | `/.waddle/node-ip.txt` | Optional Bluesound Node IP (default 192.168.50.239) |
 | `/dictionaries/english/` | Wiktionary StarDict files, put there by `waddle dict get` |
 | `/waddleos-x4pro.bin` | Firmware downloaded by Oppdater fastvare |
-| `/.crosspoint/` | Reader caches; `epub_<hash>/progress.bin` holds a book's position |
-| `/.crosspoint/settings.json` (and friends) | Settings, saved as JSON by key |
+| `/.waddleos/` | Reader caches; `epub_<hash>/progress.bin` holds a book's position |
+| `/.waddleos/settings.json` (and friends) | Settings, saved as JSON by key |
 
 ## arnee.me
 
@@ -324,10 +324,10 @@ Read `.agents/rules/ui-activities.md` for details. The short version:
 - **Name clashes:** `SETTINGS` and `GUI` are macros. Do not use them as enum
   or variable names.
 
-## Removed from CrossPoint
+## Removed from Waddle
 
 So you do not go looking for them: plugins, the OPDS catalog, KOReader sync,
-OTA from CrossPoint's GitHub, LCP DRM, mDNS, font download and web font
+OTA from the original project's GitHub, LCP DRM, mDNS, font download and web font
 upload, Calibre wireless, NTP sync, the theme setting and other themes, the
 old home screen, 33 UI languages, keyboard layouts, other boards (Picco,
 Metalio, Paper Mono, X3/X4), quick resume after timeout, and the host unit
@@ -337,8 +337,8 @@ protected-book support inside the EPUB loader.
 ## Making a change
 
 1. Branch from `waddle` (`git fetch origin waddle`), make the change, push,
-   open a PR into `waddle` in `ArneeMe/waddleos`. Never touch
-   `crosspoint-reader/crosspoint-reader`.
+   open a PR into `waddle` in `ArneeMe/waddleos`. Never touch another
+   repository.
 2. For anything visual, show Arne an image mockup first.
 3. Wait for the `build` check (or let Arne merge and fix forward if he asks).
 4. Write a short PR description with a "test on the reader" list. Only Arne

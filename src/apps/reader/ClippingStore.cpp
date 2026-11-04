@@ -19,7 +19,7 @@ namespace {
 constexpr uint8_t LEGACY_VERSION = 1;
 constexpr uint8_t LAYOUT_VERSION = 3;
 constexpr uint8_t VERSION = 4;
-constexpr char CLIPPINGS_DIR[] = "/.crosspoint/clippings";
+constexpr char CLIPPINGS_DIR[] = "/.waddleos/clippings";
 constexpr size_t TEXT_COPY_BUFFER_SIZE = 128;
 constexpr size_t HEADER_STRING_MAX = CLIPPING_TEXT_MAX;
 
@@ -535,7 +535,7 @@ bool ClippingStore::writeToFile(const std::string* replacementText, const size_t
     LOG_ERR("CLIP", "OOM: clipping text offsets");
     return false;
   }
-  Storage.mkdir("/.crosspoint");
+  Storage.mkdir("/.waddleos");
   Storage.mkdir(CLIPPINGS_DIR);
 
   const std::string tmpPath = storeFilePath + ".tmp";

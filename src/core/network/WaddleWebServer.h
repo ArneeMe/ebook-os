@@ -18,7 +18,7 @@ struct FileInfo {
   bool isDirectory;
 };
 
-class CrossPointWebServer {
+class WaddleWebServer {
  public:
   struct WsUploadStatus {
     bool inProgress = false;
@@ -47,8 +47,8 @@ class CrossPointWebServer {
     size_t bufferPos = 0;
   } upload;
 
-  CrossPointWebServer();
-  ~CrossPointWebServer();
+  WaddleWebServer();
+  ~WaddleWebServer();
 
   // Start the web server (call after WiFi is connected)
   void begin();

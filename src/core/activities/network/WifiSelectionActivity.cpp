@@ -10,7 +10,7 @@
 
 #include <algorithm>
 
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "core/MappedInputManager.h"
 #include "core/WifiCredentialStore.h"
 #include "core/activities/util/KeyboardEntryActivity.h"
@@ -173,7 +173,7 @@ void WifiSelectionActivity::onExit() {
   LOG_DBG("WIFI", "Free heap after scanDelete: %d bytes", ESP.getFreeHeap());
 
   // Note: We do NOT disconnect WiFi here - the parent activity
-  // (CrossPointWebServerActivity) manages WiFi connection state. We just clean
+  // (WaddleWebServerActivity) manages WiFi connection state. We just clean
   // up the scan and task.
 
   LOG_DBG("WIFI", "Free heap at onExit end: %d bytes", ESP.getFreeHeap());

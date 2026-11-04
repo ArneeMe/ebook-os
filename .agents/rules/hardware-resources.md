@@ -20,10 +20,10 @@ and PSRAM capabilities. S3 does not by itself guarantee usable PSRAM or touch;
 X4 Classic is a button-only board. Keep C3 operation viable when adding a
 capability available only on richer boards.
 
-CrossPoint's checked-in build and release targets are `default` (X3/X4),
+WaddleOS's checked-in build and release targets are `default` (X3/X4),
 `sticky`, `x4pro`, `x4c`, `papermono`, and `metalio_eink4`. Inspect the current
 workflow matrices for coverage. Additional SDK profiles are not automatically
-CrossPoint release targets or evidence of device verification.
+Waddle release targets or evidence of device verification.
 
 Budget internal RAM and PSRAM separately with `HalMemory::getInternalHeap()`
 and `getPsramHeap()`, including `largestBlockBytes`; a combined free-heap
@@ -39,7 +39,7 @@ null rather than falling back to internal RAM. Preserve that failure contract.
 5. User-facing strings follow the [translation workflow](generated-files-cache.md#translation-workflow).
 6. `constexpr` First: Use `constexpr` for compile-time constants and lookup tables, and `static constexpr` for class-level constants. This enables constant evaluation; it does not guarantee flash placement or remove runtime storage in every use.
 7. `std::vector` Pre-allocation: Always call `.reserve(N)` before any `push_back()` loop. Each growth event allocates a new block (2×), copies all elements, then frees the old one — three heap operations that fragment DRAM. When the final size is unknown, estimate conservatively.
-8. SD Persistence Throttling: Settings, state, credentials, and other `PersistableStore` JSON files live on SD under `/.crosspoint/` through `HalStorage`; SPIFFS is not mounted. Guard redundant writes and debounce progress saves to avoid serialization, SD I/O, and `storageMutex` cost.
+8. SD Persistence Throttling: Settings, state, credentials, and other `PersistableStore` JSON files live on SD under `/.waddleos/` through `HalStorage`; SPIFFS is not mounted. Guard redundant writes and debounce progress saves to avoid serialization, SD I/O, and `storageMutex` cost.
 9. Fallible storage follows the [checked-allocation contract](coding-standards.md#heap-buffer-allocation); budget peak coexistence during container growth, not just final size.
 
 ---

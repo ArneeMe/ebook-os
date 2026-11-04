@@ -5,10 +5,10 @@
 #include <cstdint>
 #include <string>
 
-class CrossPointState : public PersistableStore<CrossPointState> {
-  CrossPointState() = default;
+class WaddleState : public PersistableStore<WaddleState> {
+  WaddleState() = default;
 
-  friend class PersistableStore<CrossPointState>;
+  friend class PersistableStore<WaddleState>;
 
  public:
   static constexpr uint8_t SLEEP_RECENT_COUNT = 16;
@@ -24,7 +24,7 @@ class CrossPointState : public PersistableStore<CrossPointState> {
   bool lastSleepFromReader = false;
   bool showBootScreen = true;
 
-  static const char* getFilePath() { return "/.crosspoint/state.json"; }
+  static const char* getFilePath() { return "/.waddleos/state.json"; }
   void toJson(JsonDocument& doc) const;
   bool fromJson(JsonVariantConst doc);
 
@@ -35,4 +35,4 @@ class CrossPointState : public PersistableStore<CrossPointState> {
   void pushRecentOverlaySleep(uint16_t idx);
 };
 
-#define APP_STATE CrossPointState::getInstance()
+#define APP_STATE WaddleState::getInstance()

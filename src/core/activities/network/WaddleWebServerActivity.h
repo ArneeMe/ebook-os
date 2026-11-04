@@ -6,7 +6,7 @@
 
 #include "NetworkModeSelectionActivity.h"
 #include "core/activities/Activity.h"
-#include "core/network/CrossPointWebServer.h"
+#include "core/network/WaddleWebServer.h"
 
 // Web server activity states
 enum class WebServerActivityState {
@@ -18,16 +18,16 @@ enum class WebServerActivityState {
 };
 
 /**
- * CrossPointWebServerActivity is the entry point for file transfer functionality.
+ * WaddleWebServerActivity is the entry point for file transfer functionality.
  * It:
  * - First presents a choice between "Join a Network" (STA) and "Create Hotspot" (AP)
  * - For STA mode: Launches WifiSelectionActivity to connect to an existing network
  * - For AP mode: Creates an Access Point that clients can connect to
- * - Starts the CrossPointWebServer when connected
+ * - Starts the WaddleWebServer when connected
  * - Handles client requests in its loop() function
  * - Cleans up the server and shuts down WiFi on exit
  */
-class CrossPointWebServerActivity final : public Activity {
+class WaddleWebServerActivity final : public Activity {
   WebServerActivityState state = WebServerActivityState::MODE_SELECTION;
 
   // Network mode
@@ -38,7 +38,7 @@ class CrossPointWebServerActivity final : public Activity {
   bool startInJoinNetwork = false;
 
   // Web server - owned by this activity
-  std::unique_ptr<CrossPointWebServer> webServer;
+  std::unique_ptr<WaddleWebServer> webServer;
 
   // Server status
   std::string connectedIP;
@@ -69,9 +69,9 @@ class CrossPointWebServerActivity final : public Activity {
   void startWebServer();
 
  public:
-  explicit CrossPointWebServerActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
+  explicit WaddleWebServerActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
                                        bool startInJoinNetwork = false)
-      : Activity("CrossPointWebServer", renderer, mappedInput), startInJoinNetwork(startInJoinNetwork) {}
+      : Activity("WaddleWebServer", renderer, mappedInput), startInJoinNetwork(startInJoinNetwork) {}
   void onEnter() override;
   void onExit() override;
   void loop() override;

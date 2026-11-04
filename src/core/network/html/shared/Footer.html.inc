@@ -1,7 +1,7 @@
 <footer class="site-footer">
   <div class="footer-inner">
     <div class="footer-main">
-      <div class="footer-brand"><a class="brand-link" href="/"><img class="brand-logo" src="/assets/crosspoint-icon.svg" alt="" width="28" height="28" />WaddleOS</a><p>Arne's e-reader. Built on CrossPoint Reader (MIT license).</p></div>
+      <div class="footer-brand"><a class="brand-link" href="/"><img class="brand-logo" src="/assets/waddle-icon.svg" alt="" width="28" height="28" />WaddleOS</a><p>Arne's e-reader. Built on Waddle Reader (MIT license).</p></div>
     </div>
   </div>
 </footer>

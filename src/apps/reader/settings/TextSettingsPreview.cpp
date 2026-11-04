@@ -14,7 +14,7 @@
 #include <string>
 #include <utility>
 
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "core/fontIds.h"
 
 namespace textsettings {

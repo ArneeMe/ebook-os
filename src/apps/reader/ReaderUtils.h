@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "apps/reader/ReaderSettings.h"
 #include <GfxRenderer.h>
 #include <HalGPIO.h>
@@ -77,7 +77,7 @@ inline PageTurnResult detectPageTurn(const MappedInputManager& input) {
   };
   const bool prev =
       tiltPrev || (pageButtonTriggered(MappedInputManager::Button::PageBack) || pageButtonTriggered(prevButton));
-  const bool powerTurn = SETTINGS.shortPwrBtn == CrossPointSettings::SHORT_PWRBTN::PAGE_TURN &&
+  const bool powerTurn = SETTINGS.shortPwrBtn == WaddleSettings::SHORT_PWRBTN::PAGE_TURN &&
                          input.wasReleased(MappedInputManager::Button::Power);
   const bool next = input.homeButtonAction() == HomeButtonAction::NextPage || tiltNext ||
                     pageButtonTriggered(MappedInputManager::Button::PageForward) || powerTurn ||

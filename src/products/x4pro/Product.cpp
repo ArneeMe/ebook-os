@@ -4,7 +4,7 @@
 #include "apps/news/NewsActivity.h"
 #include "apps/news/NewsPaper.h"
 
-// The e-reader: Hjem as home, Nyheter after the NRK paper, CrossPoint's deep sleep.
+// The e-reader: Hjem as home, Nyheter after the NRK paper, Waddle's deep sleep.
 namespace product {
 
 void beginBoard() {}

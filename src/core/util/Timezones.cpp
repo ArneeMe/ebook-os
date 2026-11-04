@@ -5,7 +5,7 @@
 #include <cstdio>
 #include <cstring>
 
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 
 namespace timezones {
 namespace {
@@ -166,13 +166,13 @@ void formatOffset(const uint8_t index, char* buf, const size_t bufSize) {
 
 void applyToClock() {
   const TimezoneInfo& tz = TABLE[activeIndex()];
-  if (SETTINGS.clockDst == CrossPointSettings::CLOCK_DST_AUTO) {
+  if (SETTINGS.clockDst == WaddleSettings::CLOCK_DST_AUTO) {
     halClock.setTimezone(tz.posixTz);
     return;
   }
   // Forced DST: replace the zone's rule with a fixed offset — the standard
   // offset, plus one hour when forced on. POSIX offset sign is inverted.
-  const int q = tz.stdOffsetQ + (SETTINGS.clockDst == CrossPointSettings::CLOCK_DST_ON ? 4 : 0);
+  const int q = tz.stdOffsetQ + (SETTINGS.clockDst == WaddleSettings::CLOCK_DST_ON ? 4 : 0);
   const int absQ = q < 0 ? -q : q;
   char fixed[16];
   snprintf(fixed, sizeof(fixed), "UTC%c%d:%02d", q < 0 ? '+' : '-', absQ / 4, (absQ % 4) * 15);

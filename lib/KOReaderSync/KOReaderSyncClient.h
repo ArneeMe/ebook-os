@@ -27,8 +27,8 @@ struct KOReaderMetadata {
 };
 
 /**
- * Rich CrossPoint position sent alongside progress uploads. Maps 1:1 onto the
- * crosspoint-sync extended `position` object (see crosspoint-sync docs/API.md).
+ * Rich Waddle position sent alongside progress uploads. Maps 1:1 onto the
+ * extended `position` object of the original sync server.
  * It is transmitted only when the selected server type supports rich progress.
  * These fields remain layout-dependent compatibility hints; the standard XPath
  * is the content anchor.

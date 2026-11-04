@@ -6,7 +6,7 @@
 #include <SdCardFontRegistry.h>
 #include <VectorFontSupport.h>
 
-#if CROSSPOINT_VECTOR_FONTS
+#if WADDLE_VECTOR_FONTS
 #include <FontPsram.h>  // PsramVector for resident TTF bytes
 #endif
 
@@ -39,7 +39,7 @@ class SdCardFontSystem {
   void ensureLoaded(GfxRenderer& renderer);
 
   /// Resolve an SD card font ID from family name + reader point size.
-  /// Returns 0 if not found. Used by CrossPointSettings::getReaderFontId().
+  /// Returns 0 if not found. Used by WaddleSettings::getReaderFontId().
   int resolveFontId(const char* familyName, uint8_t pointSize) const;
 
   /// Access the registry (e.g. for settings UI to enumerate available fonts).
@@ -70,7 +70,7 @@ class SdCardFontSystem {
   // reused).
   void setupUiFallbacks(GfxRenderer& renderer);
 
-#if CROSSPOINT_VECTOR_FONTS
+#if WADDLE_VECTOR_FONTS
   // --- Vector (.ttf/.otf) font path (FreeInkFont via TtfEpdFont) -------------
   // Load/refresh the selected TTF family at the current reader size, register
   // it with the renderer, and track it so ensureSdCardFontReady() rebuilds its
@@ -91,7 +91,7 @@ class SdCardFontSystem {
   void freeTtfSources();
   // ReadFn for streamed sources: serves the PSRAM prefix cache first, SD after.
   static unsigned long prefixRead(void* ctx, unsigned long offset, unsigned char* buffer, unsigned long count);
-#endif  // CROSSPOINT_VECTOR_FONTS
+#endif  // WADDLE_VECTOR_FONTS
 
   // --- Sized variants of the reader font (CSS font-size, headings, drop caps) ---
   // Served to the renderer through FontVariantProvider. Variant ids derive from the
@@ -116,7 +116,7 @@ class SdCardFontSystem {
   SdCardFontManager manager_;
   std::atomic<bool> registryDirty_{false};
 
-#if CROSSPOINT_VECTOR_FONTS
+#if WADDLE_VECTOR_FONTS
   // One style source file. SMALL files are read fully into `bytes` (resident,
   // PSRAM when present); LARGE files stream from `file` (kept open) so a multi-MB
   // file never sits in RAM. All faces (reader + UI sizes) share these sources.
@@ -151,7 +151,7 @@ class SdCardFontSystem {
   std::vector<TtfVariant> ttfVariants_;
   bool loadTtfVariant(uint8_t pointSize, int fontId);
   void clearTtfVariants(GfxRenderer& renderer);
-#endif  // CROSSPOINT_VECTOR_FONTS
+#endif  // WADDLE_VECTOR_FONTS
 };
 
 // Global SD card font system instance (defined in main.cpp).

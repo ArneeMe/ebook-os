@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "core/MappedInputManager.h"
 #include "core/ReaderFontSizes.h"
 #include "core/SdCardFontSystem.h"
@@ -151,7 +151,7 @@ void TextSettingsActivity::rebuildSizeList() {
   currentSizeIndex_ = 0;
   for (const uint8_t pt : points) {
     // "pt" is deliberately not translated: it is the typographic unit symbol,
-    // written the same way in every language CrossPoint ships.
+    // written the same way in every language Waddle ships.
     char label[12];
     snprintf(label, sizeof(label), "%u pt", pt);
     if (pt == selectedPt) currentSizeIndex_ = static_cast<int>(sizes_.size());

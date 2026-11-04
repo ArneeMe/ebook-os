@@ -265,5 +265,5 @@ class EpubReaderActivity final : public ReaderActivity {
   bool skipLoopDelay() override;
 
   ScreenshotInfo getScreenshotInfo() const override;
-  CrossPointPosition getCurrentPosition() const;
+  WaddlePosition getCurrentPosition() const;
 };

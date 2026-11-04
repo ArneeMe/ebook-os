@@ -11,8 +11,8 @@
 #include <cctype>
 #include <cstdio>
 
-#include "core/CrossPointSettings.h"
-#include "core/CrossPointState.h"
+#include "core/WaddleSettings.h"
+#include "core/WaddleState.h"
 #include "EpubReaderActivity.h"
 #include "ReaderUtils.h"
 #include "RecentBooksStore.h"

@@ -12,8 +12,8 @@ ProgressComparison compareOrdered(const uint32_t local, const uint32_t remote) {
 }
 }  // namespace
 
-ProgressComparison compareProgress(const CrossPointPosition& local, const float localPercentage,
-                                   const CrossPointPosition& remote, const float remotePercentage) {
+ProgressComparison compareProgress(const WaddlePosition& local, const float localPercentage,
+                                   const WaddlePosition& remote, const float remotePercentage) {
   if (local.hasResolvedSpineIndex && remote.hasResolvedSpineIndex) {
     if (local.spineIndex != remote.spineIndex) {
       return local.spineIndex > remote.spineIndex ? ProgressComparison::LocalAhead : ProgressComparison::RemoteAhead;
@@ -43,8 +43,8 @@ ProgressComparison compareProgress(const CrossPointPosition& local, const float 
   return ProgressComparison::Unknown;
 }
 
-RemoteRecordChoice selectRemoteRecord(const CrossPointPosition& primary, const float primaryPercentage,
-                                      const CrossPointPosition& alternate, const float alternatePercentage) {
+RemoteRecordChoice selectRemoteRecord(const WaddlePosition& primary, const float primaryPercentage,
+                                      const WaddlePosition& alternate, const float alternatePercentage) {
   return compareProgress(primary, primaryPercentage, alternate, alternatePercentage) == ProgressComparison::RemoteAhead
              ? RemoteRecordChoice::Alternate
              : RemoteRecordChoice::Primary;

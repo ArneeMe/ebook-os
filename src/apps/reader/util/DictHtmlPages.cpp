@@ -11,13 +11,13 @@
 #include <cctype>
 #include <cstring>
 
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 
 namespace {
 
 // Normalized XHTML staged here for the file-driven parser; truncated on each
 // use, removed after the parse.
-constexpr const char* TMP_HTML_PATH = "/.crosspoint/dicthtml.tmp";
+constexpr const char* TMP_HTML_PATH = "/.waddleos/dicthtml.tmp";
 
 // Entry includes the parser's measured ~21 KB working set in addition to layout headroom.
 constexpr size_t MIN_STYLED_FREE_HEAP = 64 * 1024;

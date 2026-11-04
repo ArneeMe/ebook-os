@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-#include "CrossPointSettings.h"
+#include "WaddleSettings.h"
 #include "HomeButtonSettings.h"
 #include "core/activities/settings/SettingsActivity.h"
 #include "core/components/UITheme.h"
@@ -25,21 +25,21 @@ struct ShortPowerButtonOption {
 
 // Menu order differs from the persisted enum order, so map by value.
 inline std::vector<ShortPowerButtonOption> shortPowerButtonOptions() {
-  std::vector<ShortPowerButtonOption> options = {{StrId::STR_IGNORE, CrossPointSettings::IGNORE},
-                                                 {StrId::STR_SLEEP, CrossPointSettings::SLEEP},
-                                                 {StrId::STR_PAGE_TURN, CrossPointSettings::PAGE_TURN},
-                                                 {StrId::STR_FORCE_REFRESH, CrossPointSettings::FORCE_REFRESH},
-                                                 {StrId::STR_FOOTNOTES, CrossPointSettings::FOOTNOTES}};
-  options.reserve(CrossPointSettings::SHORT_PWRBTN_COUNT);
+  std::vector<ShortPowerButtonOption> options = {{StrId::STR_IGNORE, WaddleSettings::IGNORE},
+                                                 {StrId::STR_SLEEP, WaddleSettings::SLEEP},
+                                                 {StrId::STR_PAGE_TURN, WaddleSettings::PAGE_TURN},
+                                                 {StrId::STR_FORCE_REFRESH, WaddleSettings::FORCE_REFRESH},
+                                                 {StrId::STR_FOOTNOTES, WaddleSettings::FOOTNOTES}};
+  options.reserve(WaddleSettings::SHORT_PWRBTN_COUNT);
   if (BoardConfig::hasTouch()) {
-    options.push_back({StrId::STR_CONFIRM, CrossPointSettings::PWR_CONFIRM});
+    options.push_back({StrId::STR_CONFIRM, WaddleSettings::PWR_CONFIRM});
   } else {
-    options.push_back({StrId::STR_SAVE_CLIPPING, CrossPointSettings::CREATE_CLIPPING});
+    options.push_back({StrId::STR_SAVE_CLIPPING, WaddleSettings::CREATE_CLIPPING});
   }
   // Touch boards without a home key have no button for these shortcuts.
   if (BoardConfig::hasTouch() && !BoardConfig::hasHomeKey()) {
-    options.push_back({StrId::STR_BOOKMARK_OPTION, CrossPointSettings::PWR_BOOKMARK});
-    options.push_back({StrId::STR_READER_MENU, CrossPointSettings::PWR_READER_MENU});
+    options.push_back({StrId::STR_BOOKMARK_OPTION, WaddleSettings::PWR_BOOKMARK});
+    options.push_back({StrId::STR_READER_MENU, WaddleSettings::PWR_READER_MENU});
   }
   return options;
 }
@@ -55,12 +55,12 @@ inline uint8_t shortPowerButtonDisplayValue() {
   for (size_t i = 0; i < options.size(); i++) {
     if (options[i].value == SETTINGS.shortPwrBtn) return static_cast<uint8_t>(i);
   }
-  return CrossPointSettings::IGNORE;
+  return WaddleSettings::IGNORE;
 }
 
 inline void setShortPowerButtonFromDisplayValue(const uint8_t displayValue) {
   const auto options = shortPowerButtonOptions();
-  SETTINGS.shortPwrBtn = displayValue < options.size() ? options[displayValue].value : CrossPointSettings::IGNORE;
+  SETTINGS.shortPwrBtn = displayValue < options.size() ? options[displayValue].value : WaddleSettings::IGNORE;
 }
 
 inline SettingInfo buildShortPowerButtonSetting() {

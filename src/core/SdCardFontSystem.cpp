@@ -12,13 +12,13 @@
 #include <cmath>
 #include <iterator>
 
-#include "CrossPointSettings.h"
+#include "WaddleSettings.h"
 #include "ReaderFontSizes.h"
 #include "fontIds.h"
 
 namespace {
 
-#if CROSSPOINT_VECTOR_FONTS
+#if WADDLE_VECTOR_FONTS
 // Stable, non-zero renderer font id for a vector family at a size (FNV-1a of
 // name + size). 0 is the "not found" sentinel, so bump collisions to 1.
 int computeTtfFontId(const char* familyName, uint8_t pointSize) {
@@ -33,7 +33,7 @@ int computeTtfFontId(const char* familyName, uint8_t pointSize) {
   const int id = static_cast<int>(hash);
   return id != 0 ? id : 1;
 }
-#endif  // CROSSPOINT_VECTOR_FONTS
+#endif  // WADDLE_VECTOR_FONTS
 
 }  // namespace
 
@@ -75,7 +75,7 @@ void SdCardFontSystem::begin(GfxRenderer& renderer) {
   registry_.discover();
   renderer_ = &renderer;
   cpfontVariants_.reserve(MAX_CPFONT_VARIANTS);
-#if CROSSPOINT_VECTOR_FONTS
+#if WADDLE_VECTOR_FONTS
   ttfVariants_.reserve(MAX_TTF_VARIANTS);
 #endif
   FontVariantProvider provider;
@@ -87,7 +87,7 @@ void SdCardFontSystem::begin(GfxRenderer& renderer) {
   renderer.setFontVariantProvider(provider);
 
   // Register this system as the SD font ID resolver in settings.
-  // Uses a static trampoline since CrossPointSettings stores a plain function pointer.
+  // Uses a static trampoline since WaddleSettings stores a plain function pointer.
   READER_SETTINGS.sdFontIdResolver = [](void* ctx, const char* familyName, uint8_t pointSize) -> int {
     return static_cast<SdCardFontSystem*>(ctx)->resolveFontId(familyName, pointSize);
   };
@@ -97,7 +97,7 @@ void SdCardFontSystem::begin(GfxRenderer& renderer) {
   if (READER_SETTINGS.sdFontFamilyName[0] != '\0') {
     const auto* family = registry_.findFamily(READER_SETTINGS.sdFontFamilyName);
     if (family) {
-#if CROSSPOINT_VECTOR_FONTS
+#if WADDLE_VECTOR_FONTS
       if (family->vector) {
         // Vector (.ttf/.otf) families load through the FreeInkFont path; the
         // .cpfont manager below rejects them ("Invalid magic bytes") and would
@@ -136,7 +136,7 @@ void SdCardFontSystem::ensureLoaded(GfxRenderer& renderer) {
 
   const char* wantedFamily = READER_SETTINGS.sdFontFamilyName;
 
-#if CROSSPOINT_VECTOR_FONTS
+#if WADDLE_VECTOR_FONTS
   // Vector (.ttf/.otf) family selected: route through the FreeInkFont path and
   // drop any pre-rasterized (.cpfont) font that was loaded.
   if (wantedFamily[0] != '\0') {
@@ -285,7 +285,7 @@ int SdCardFontSystem::resolveVariant(const int fontId, const float scale) {
   if (const int builtin = builtinReaderFontVariant(fontId, scale); builtin != 0) {
     return renderer_->getFontMap().count(builtin) ? builtin : 0;
   }
-#if CROSSPOINT_VECTOR_FONTS
+#if WADDLE_VECTOR_FONTS
   if (ttf_ && fontId == ttfFontId_) {
     // Vector faces render at any size.
     const int pointSize = std::clamp(static_cast<int>(ttfPointSize_ * scale + 0.5f), 6, 72);
@@ -324,7 +324,7 @@ int SdCardFontSystem::resolveVariant(const int fontId, const float scale) {
 }
 
 bool SdCardFontSystem::loadVariant(const int fontId) {
-#if CROSSPOINT_VECTOR_FONTS
+#if WADDLE_VECTOR_FONTS
   if (ttf_) {
     for (int pointSize = 6; pointSize <= 72; ++pointSize) {
       if (variantFontId(ttfFontId_, static_cast<uint8_t>(pointSize)) == fontId) {
@@ -379,7 +379,7 @@ bool SdCardFontSystem::loadCpfontVariant(const SdCardFontFamilyInfo& family, con
 }
 
 int SdCardFontSystem::resolveFontId(const char* familyName, uint8_t /*pointSize*/) const {
-#if CROSSPOINT_VECTOR_FONTS
+#if WADDLE_VECTOR_FONTS
   // A loaded vector (.ttf) family answers first — it isn't in the .cpfont manager.
   if (ttfFontId_ != 0 && familyName && ttfFamily_ == familyName) return ttfFontId_;
 #endif
@@ -389,7 +389,7 @@ int SdCardFontSystem::resolveFontId(const char* familyName, uint8_t /*pointSize*
   return manager_.getFontId(familyName);
 }
 
-#if CROSSPOINT_VECTOR_FONTS
+#if WADDLE_VECTOR_FONTS
 
 void SdCardFontSystem::freeTtfSources() {
   for (auto& s : ttfSources_) {
@@ -706,4 +706,4 @@ void SdCardFontSystem::loadTtfFamily(const SdCardFontFamilyInfo& family, GfxRend
   LOG_DBG("SDFS", "Loaded TTF font: %s @ %upt (id %d)", family.name.c_str(), size, ttfFontId_);
 }
 
-#endif  // CROSSPOINT_VECTOR_FONTS
+#endif  // WADDLE_VECTOR_FONTS

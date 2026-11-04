@@ -41,7 +41,7 @@ CACHE = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "waddle
 ESP_MAGIC = 0xE9
 ESP32_S3_CHIP_ID = 9
 APP_PARTITION_SIZE = 0x640000  # partitions.csv: app0/app1
-BOARD_TAG_PREFIX = b"CROSSPOINT-BOARD-V1:"
+BOARD_TAG_PREFIXES = (b"WADDLE-BOARD-V1:", b"CROSSPOINT-BOARD-V1:")  # the second in builds before 2026-11
 
 TTY = sys.stdout.isatty()
 B, DIM, G, R, Y, C, N = (
@@ -130,9 +130,10 @@ def check_image(data):
         die(f"Too large: {human(len(data))}, the app slot is {human(APP_PARTITION_SIZE)}")
     if data[23] == 1 and hashlib.sha256(data[:-32]).digest() != data[-32:]:
         die("SHA-256 mismatch: the file is corrupt or incomplete")
-    i = data.find(BOARD_TAG_PREFIX)
-    if i >= 0:
-        board = data[i + len(BOARD_TAG_PREFIX) : data.find(b";", i)]
+    found = [(data.find(p), p) for p in BOARD_TAG_PREFIXES if data.find(p) >= 0]
+    if found:
+        i, prefix = found[0]
+        board = data[i + len(prefix) : data.find(b";", i)]
         if board != BOARD:
             die(f"Built for board '{board.decode(errors='replace')}', not {BOARD.decode()}")
     ok(f"ESP32-S3 image for {BOARD.decode()}, {human(len(data))}, SHA-256 OK")

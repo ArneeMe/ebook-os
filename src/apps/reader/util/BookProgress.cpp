@@ -20,7 +20,7 @@ int loadBookProgress(const std::string& path, int* chapter) {
   if (chapter) *chapter = 0;
   if (FsHelpers::hasReflowableBookExtension(path)) {
     // Metadata objects exceed the stack budget; only the featured book is loaded, once per entry.
-    auto epub = makeUniqueNoThrow<Epub>(path, "/.crosspoint");
+    auto epub = makeUniqueNoThrow<Epub>(path, "/.waddleos");
     if (!epub) {
       LOG_ERR("HOME", "OOM: progress metadata");
       return -1;
@@ -41,7 +41,7 @@ int loadBookProgress(const std::string& path, int* chapter) {
     return std::clamp(static_cast<int>(epub->calculateProgress(spine, fraction) * 100 + 0.5f), 0, 100);
   }
   if (FsHelpers::hasXtcExtension(path)) {
-    auto xtc = makeUniqueNoThrow<Xtc>(path, "/.crosspoint");
+    auto xtc = makeUniqueNoThrow<Xtc>(path, "/.waddleos");
     if (!xtc) {
       LOG_ERR("HOME", "OOM: XTC progress metadata");
       return -1;

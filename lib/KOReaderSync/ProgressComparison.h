@@ -2,14 +2,14 @@
 
 #include <cstdint>
 
-#include "CrossPointPosition.h"
+#include "WaddlePosition.h"
 
 enum class ProgressComparison : uint8_t { LocalAhead, Synchronized, RemoteAhead, Unknown };
 
 enum class RemoteRecordChoice : uint8_t { Primary, Alternate };
 
-ProgressComparison compareProgress(const CrossPointPosition& local, float localPercentage,
-                                   const CrossPointPosition& remote, float remotePercentage);
+ProgressComparison compareProgress(const WaddlePosition& local, float localPercentage,
+                                   const WaddlePosition& remote, float remotePercentage);
 
-RemoteRecordChoice selectRemoteRecord(const CrossPointPosition& primary, float primaryPercentage,
-                                      const CrossPointPosition& alternate, float alternatePercentage);
+RemoteRecordChoice selectRemoteRecord(const WaddlePosition& primary, float primaryPercentage,
+                                      const WaddlePosition& alternate, float alternatePercentage);

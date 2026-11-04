@@ -10,7 +10,7 @@
 
 #include "apps/messages/MeshUi.h"
 #include "apps/messages/MessagesActivity.h"
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "core/MappedInputManager.h"
 #include "core/fontIds.h"
 #include "services/mesh/MeshGps.h"

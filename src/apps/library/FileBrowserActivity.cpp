@@ -12,8 +12,8 @@
 #include <functional>
 
 #include "apps/reader/ClippingStore.h"
-#include "core/CrossPointSettings.h"
-#include "core/CrossPointState.h"
+#include "core/WaddleSettings.h"
+#include "core/WaddleState.h"
 #include "core/MappedInputManager.h"
 #include "apps/reader/RecentBooksStore.h"
 #include "core/activities/util/ConfirmationActivity.h"
@@ -39,7 +39,7 @@ std::string getBookCachePath(const std::string& path) {
   } else {
     return "";
   }
-  return std::string("/.crosspoint/") + prefix + std::to_string(std::hash<std::string>{}(path));
+  return std::string("/.waddleos/") + prefix + std::to_string(std::hash<std::string>{}(path));
 }
 
 bool moveStatePath(const std::string& oldPath, const std::string& newPath, bool& moved) {

@@ -1,9 +1,9 @@
 """
 PlatformIO pre-build script: inject git branch and short SHA into
-CROSSPOINT_VERSION for development environments.
+WADDLE_VERSION for development environments.
 
 Results in a version string like:  1.1.0-dev-feat-kosync-xpath-05c6cf8
-Release environments are unaffected; they set CROSSPOINT_VERSION in the ini.
+Release environments are unaffected; they set WADDLE_VERSION in the ini.
 """
 
 import configparser
@@ -70,10 +70,10 @@ def get_base_version(project_dir):
         return '0.0.0'
     config = configparser.ConfigParser()
     config.read(ini_path, encoding='utf-8')
-    if not config.has_option('crosspoint', 'version'):
-        warn('No [crosspoint] version in platformio.ini; base version will be "0.0.0"')
+    if not config.has_option('waddle', 'version'):
+        warn('No [waddle] version in platformio.ini; base version will be "0.0.0"')
         return '0.0.0'
-    return config.get('crosspoint', 'version')
+    return config.get('waddle', 'version')
 
 
 def inject_version(env):
@@ -91,14 +91,14 @@ def inject_version(env):
     def add_version(build_env, node):
         # Only these translation units depend on Git metadata. Keep library and
         # reader objects reusable when the branch or commit changes.
-        if b'CROSSPOINT_VERSION' not in node.srcnode().get_contents():
+        if b'WADDLE_VERSION' not in node.srcnode().get_contents():
             return node
         version_env = build_env.Clone()
-        version_env.Append(CPPDEFINES=[('CROSSPOINT_VERSION', f'\\"{version_string}\\"')])
+        version_env.Append(CPPDEFINES=[('WADDLE_VERSION', f'\\"{version_string}\\"')])
         return version_env.Object(node)
 
     env.AddBuildMiddleware(add_version)
-    print(f'CrossPoint build version: {version_string}')
+    print(f'Waddle build version: {version_string}')
 
 
 # PlatformIO/SCons entry point — Import and env are SCons builtins injected at runtime.

@@ -10,7 +10,7 @@
 // invisible to the font registry, and .cpfont SD fonts remain the only
 // sideloaded-font route on those boards.
 #ifdef BOARD_HAS_PSRAM
-#define CROSSPOINT_VECTOR_FONTS 1
+#define WADDLE_VECTOR_FONTS 1
 #else
-#define CROSSPOINT_VECTOR_FONTS 0
+#define WADDLE_VECTOR_FONTS 0
 #endif

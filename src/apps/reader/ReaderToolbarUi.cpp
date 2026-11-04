@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <cstdio>
 
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "core/MappedInputManager.h"
 #include "core/components/UITheme.h"
 #include "core/components/icons/readerToolbarIcons.h"

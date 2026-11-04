@@ -11,7 +11,7 @@
 
 #include "fontIds.h"
 
-// Reader font size is stored as an actual point size (see CrossPointSettings::
+// Reader font size is stored as an actual point size (see WaddleSettings::
 // fontPointSize), not an abstract Small/Medium/Large slot. The selectable sizes
 // therefore come from whichever family is active: the built-in or vector set
 // below, or the .cpfont files a user installed for an SD family.

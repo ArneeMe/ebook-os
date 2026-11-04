@@ -3,9 +3,8 @@
 WaddleOS is Arne's personal firmware for the **Xteink X4 Pro** e-reader
 (ESP32-S3, 16 MB flash, 8 MB PSRAM, 800x480 e-ink, GT911 touch) and for the
 **LilyGO T5 E-Paper S3 Pro** mesh units (960x540 e-ink, 868 MHz LoRa, GPS),
-plus their gateway and Pi server. It started as
-a fork of [CrossPoint Reader](https://github.com/crosspoint-reader/crosspoint-reader)
-but no longer follows upstream: change, move or delete any code freely.
+plus their gateway and Pi server. It began from another open-source reader
+firmware but follows no upstream: change, move or delete any code freely.
 
 Read [docs/waddle/ARCHITECTURE.md](docs/waddle/ARCHITECTURE.md) for how the system fits
 together (firmware, arnee.me, the `waddle` command) and
@@ -22,7 +21,7 @@ together (firmware, arnee.me, the `waddle` command) and
 ## Working here
 
 - Branch from `waddle`, open a pull request into `waddle` in `ArneeMe/waddleos`.
-  Never open anything in `crosspoint-reader/crosspoint-reader`.
+  Never open anything in another repository.
 - Commit and push feature branches without asking. Never force-push `waddle`.
 - Write short, factual PR descriptions, in Norwegian.
 - Compile before pushing: in a cloud session run `bash scripts/cloud-setup.sh`

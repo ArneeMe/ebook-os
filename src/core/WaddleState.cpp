@@ -1,4 +1,4 @@
-#include "CrossPointState.h"
+#include "WaddleState.h"
 
 #include <algorithm>
 #include <cstring>
@@ -10,7 +10,7 @@ bool isRecentIndex(const uint16_t* recentImages, uint8_t recentPos, uint8_t rece
   const uint8_t effectiveCount = std::min(checkCount, recentFill);
   for (uint8_t i = 0; i < effectiveCount; i++) {
     const uint8_t slot =
-        (recentPos + CrossPointState::SLEEP_RECENT_COUNT - 1 - i) % CrossPointState::SLEEP_RECENT_COUNT;
+        (recentPos + WaddleState::SLEEP_RECENT_COUNT - 1 - i) % WaddleState::SLEEP_RECENT_COUNT;
     if (recentImages[slot] == idx) return true;
   }
   return false;
@@ -18,29 +18,29 @@ bool isRecentIndex(const uint16_t* recentImages, uint8_t recentPos, uint8_t rece
 
 void pushRecentIndex(uint16_t* recentImages, uint8_t& recentPos, uint8_t& recentFill, uint16_t idx) {
   recentImages[recentPos] = idx;
-  recentPos = (recentPos + 1) % CrossPointState::SLEEP_RECENT_COUNT;
-  if (recentFill < CrossPointState::SLEEP_RECENT_COUNT) recentFill++;
+  recentPos = (recentPos + 1) % WaddleState::SLEEP_RECENT_COUNT;
+  if (recentFill < WaddleState::SLEEP_RECENT_COUNT) recentFill++;
 }
 
 }  // namespace
 
-bool CrossPointState::isRecentSleep(uint16_t idx, uint8_t checkCount) const {
+bool WaddleState::isRecentSleep(uint16_t idx, uint8_t checkCount) const {
   return isRecentIndex(recentSleepImages, recentSleepPos, recentSleepFill, idx, checkCount);
 }
 
-bool CrossPointState::isRecentOverlaySleep(uint16_t idx, uint8_t checkCount) const {
+bool WaddleState::isRecentOverlaySleep(uint16_t idx, uint8_t checkCount) const {
   return isRecentIndex(recentOverlaySleepImages, recentOverlaySleepPos, recentOverlaySleepFill, idx, checkCount);
 }
 
-void CrossPointState::pushRecentSleep(uint16_t idx) {
+void WaddleState::pushRecentSleep(uint16_t idx) {
   pushRecentIndex(recentSleepImages, recentSleepPos, recentSleepFill, idx);
 }
 
-void CrossPointState::pushRecentOverlaySleep(uint16_t idx) {
+void WaddleState::pushRecentOverlaySleep(uint16_t idx) {
   pushRecentIndex(recentOverlaySleepImages, recentOverlaySleepPos, recentOverlaySleepFill, idx);
 }
 
-void CrossPointState::toJson(JsonDocument& doc) const {
+void WaddleState::toJson(JsonDocument& doc) const {
   doc["openEpubPath"] = openEpubPath;
   JsonArray recentArr = doc["recentSleepImages"].to<JsonArray>();
   for (int i = 0; i < SLEEP_RECENT_COUNT; i++) recentArr.add(recentSleepImages[i]);
@@ -55,7 +55,7 @@ void CrossPointState::toJson(JsonDocument& doc) const {
   doc["showBootScreen"] = showBootScreen;
 }
 
-bool CrossPointState::fromJson(JsonVariantConst doc) {
+bool WaddleState::fromJson(JsonVariantConst doc) {
   openEpubPath = doc["openEpubPath"] | "";
 
   memset(recentSleepImages, 0, sizeof(recentSleepImages));
@@ -78,7 +78,7 @@ bool CrossPointState::fromJson(JsonVariantConst doc) {
   }
   recentOverlaySleepPos = doc["recentOverlaySleepPos"] | static_cast<uint8_t>(0);
   if (recentOverlaySleepPos >= SLEEP_RECENT_COUNT) {
-    recentOverlaySleepPos = actualOverlayCount > 0 ? recentOverlaySleepPos % CrossPointState::SLEEP_RECENT_COUNT : 0;
+    recentOverlaySleepPos = actualOverlayCount > 0 ? recentOverlaySleepPos % WaddleState::SLEEP_RECENT_COUNT : 0;
   }
   recentOverlaySleepFill = doc["recentOverlaySleepFill"] | static_cast<uint8_t>(0);
   recentOverlaySleepFill = static_cast<uint8_t>(std::min(static_cast<int>(recentOverlaySleepFill), actualOverlayCount));

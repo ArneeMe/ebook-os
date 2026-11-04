@@ -174,7 +174,7 @@ COLOR_KEYWORDS: dict[str, list[str]] = {
         "LOAD:",
         "ENTRY",
         "[SD]",
-        "STARTING CROSSPOINT",
+        "STARTING WADDLEOS",
         "VERSION",
     ],
     Fore.LIGHTCYAN_EX: ["[RBS]"],

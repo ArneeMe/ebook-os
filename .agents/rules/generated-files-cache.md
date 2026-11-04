@@ -53,7 +53,7 @@ release conversion downloads source fonts, so verify asset hashes before publish
 
 ### Cache Structure on SD Card
 
-Book data uses `/.crosspoint/epub_<hash>/{book.bin,progress.bin,cover.bmp,sections/*.bin}`.
+Book data uses `/.waddleos/epub_<hash>/{book.bin,progress.bin,cover.bmp,sections/*.bin}`.
 The directory key is `std::hash<std::string>{}(filepath)`, not content identity.
 Rename/move flows must preserve progress and other book state; replacing contents
 at the same path leaves this key unchanged.
@@ -66,7 +66,7 @@ Path changes select another cache; same-path content replacement needs the
 appropriate freshness check and an affected-cache reset during testing.
 
 Back up progress/state first. Prefer clearing only the affected book's
-`sections/` when checking layout regeneration. Removing all of `.crosspoint/`
+`sections/` when checking layout regeneration. Removing all of `.waddleos/`
 also deletes settings, credentials, and application state.
 
 ### Cache File Format Versioning
@@ -86,7 +86,7 @@ completed and partial caches after a format change.
 
 - TXT/Markdown use `lib/Txt/TxtToHtml` and the EPUB layout/reader pipeline.
   Include them in parser, layout, progress, and cache verification.
-- `/.crosspoint/library.idx` has independent format/fold versions, freshness,
+- `/.waddleos/library.idx` has independent format/fold versions, freshness,
   and rebuild rules: see the CLX1 section of [file-formats.md](../../docs/file-formats.md)
   and `lib/LibraryIndex/`.
 - Plugin manifests, outboxes, metadata sidecars, and per-book keys follow

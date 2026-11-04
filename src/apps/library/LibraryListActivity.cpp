@@ -15,7 +15,7 @@
 #include <algorithm>
 #include <cstdio>
 
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "core/MappedInputManager.h"
 #include "apps/reader/RecentBooksStore.h"
 #include "core/activities/util/ConfirmationActivity.h"

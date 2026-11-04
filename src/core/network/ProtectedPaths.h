@@ -12,11 +12,11 @@
 // match, so the stores' temp/backup siblings are covered too.
 namespace protectedpaths {
 
-inline constexpr const char* SENSITIVE_FILES[] = {"/.crosspoint/wifi.json", "/.crosspoint/opds.json",
-                                                  "/.crosspoint/koreader.json"};
+inline constexpr const char* SENSITIVE_FILES[] = {"/.waddleos/wifi.json", "/.waddleos/opds.json",
+                                                  "/.waddleos/koreader.json"};
 
-// SdFat also opens a name by its generated 8.3 alias (".crosspoint" is
-// CROSSP~1), which no spelling check can map back to the long name.
+// SdFat also opens a name by its generated 8.3 alias (".waddleos" is
+// WADDLE~1), which no spelling check can map back to the long name.
 inline bool isShortAlias(const char* first, const char* last) {
   const char* tilde = static_cast<const char*>(memchr(first, '~', static_cast<size_t>(last - first)));
   if (!tilde || tilde + 1 >= last || tilde[1] < '0' || tilde[1] > '9') return false;

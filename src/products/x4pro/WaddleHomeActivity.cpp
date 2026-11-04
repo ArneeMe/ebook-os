@@ -274,7 +274,7 @@ void WaddleHomeActivity::ensureCover() {
   if (!hasBook || book.coverBmpPath.empty() || !FsHelpers::hasReflowableBookExtension(book.path)) return;
   const std::string thumb = UITheme::getCoverThumbPath(book.coverBmpPath, COVER_H);
   if (Storage.exists(thumb.c_str())) return;
-  Epub epub(book.path, "/.crosspoint");
+  Epub epub(book.path, "/.waddleos");
   if (epub.load(false, true) && epub.generateThumbBmp(COVER_H)) requestUpdate();
 }
 

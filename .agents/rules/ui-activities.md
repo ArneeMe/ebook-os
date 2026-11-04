@@ -119,7 +119,7 @@ registration or build footprint.
 
 [SD-font documentation](../../docs/sd-card-fonts.md) defines discovery, precedence,
 styles, sizes, and fallback. `.cpfont` works on all devices; vector TTF/OTF/TTC
-requires `CROSSPOINT_VECTOR_FONTS` and enabled PSRAM. Inspect `FontInstaller` and
+requires `WADDLE_VECTOR_FONTS` and enabled PSRAM. Inspect `FontInstaller` and
 the web handler for current upload support.
 
 Use `FontCacheManager::PrewarmScope` for scan/prewarm/render. Mixed built-in,

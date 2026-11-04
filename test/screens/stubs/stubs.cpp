@@ -9,7 +9,7 @@
 
 #include "Stubs.h"
 #include "apps/reader/ReaderSettings.h"
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "core/MappedInputManager.h"
 #include "core/activities/Activity.h"
 #include "core/activities/ActivityManager.h"
@@ -141,7 +141,7 @@ MappedInputManager::Labels MappedInputManager::mapLabels(const char* back, const
 
 // --- Settings: defaults, never saved -----------------------------------------------
 
-void CrossPointSettings::toJson(JsonDocument&) const {}
+void WaddleSettings::toJson(JsonDocument&) const {}
 bool PersistableStoreBase::writeDocToFile(const char*, const JsonDocument&) { return true; }
 ReaderSettings::StatusBarSpec ReaderSettings::statusBarSpec() const { return {}; }
 

@@ -22,8 +22,8 @@
 #include <limits>
 #include <string>
 
-#include "core/CrossPointSettings.h"
-#include "core/CrossPointState.h"
+#include "core/WaddleSettings.h"
+#include "core/WaddleState.h"
 #include "apps/reader/ReaderUtils.h"
 #include "core/components/UITheme.h"
 #include "core/fontIds.h"
@@ -144,14 +144,14 @@ BitmapPlacement calculateBitmapPlacement(const int bitmapWidth, const int bitmap
     const float screenRatio = static_cast<float>(pageWidth) / static_cast<float>(pageHeight);
 
     if (ratio > screenRatio) {
-      if (SETTINGS.sleepScreenCoverMode == CrossPointSettings::SLEEP_SCREEN_COVER_MODE::CROP) {
+      if (SETTINGS.sleepScreenCoverMode == WaddleSettings::SLEEP_SCREEN_COVER_MODE::CROP) {
         placement.cropX = 1.0f - (screenRatio / ratio);
         ratio = (1.0f - placement.cropX) * static_cast<float>(bitmapWidth) / static_cast<float>(bitmapHeight);
       }
       placement.x = 0;
       placement.y = std::round((static_cast<float>(pageHeight) - static_cast<float>(pageWidth) / ratio) / 2);
     } else {
-      if (SETTINGS.sleepScreenCoverMode == CrossPointSettings::SLEEP_SCREEN_COVER_MODE::CROP) {
+      if (SETTINGS.sleepScreenCoverMode == WaddleSettings::SLEEP_SCREEN_COVER_MODE::CROP) {
         placement.cropY = 1.0f - (ratio / screenRatio);
         ratio = static_cast<float>(bitmapWidth) / ((1.0f - placement.cropY) * static_cast<float>(bitmapHeight));
       }
@@ -595,8 +595,8 @@ void SleepActivity::onEnter() {
   display.setInverted(false);
 
   const uint8_t sleepScreen = SETTINGS.sleepScreen;
-  if (sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::TRANSPARENT_CUSTOM ||
-      sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::COVER_TRANSPARENT) {
+  if (sleepScreen == WaddleSettings::SLEEP_SCREEN_MODE::TRANSPARENT_CUSTOM ||
+      sleepScreen == WaddleSettings::SLEEP_SCREEN_MODE::COVER_TRANSPARENT) {
     // Transparent mode retains the current framebuffer. Materialize any
     // output-level inversion first so the retained content keeps its visible
     // polarity after the display driver returns to normal.
@@ -609,7 +609,7 @@ void SleepActivity::onEnter() {
       renderer.setOrientation(GfxRenderer::Orientation::Portrait);
     }
     releaseSdFontCachesForDecode(renderer);
-    if (sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::COVER_TRANSPARENT) {
+    if (sleepScreen == WaddleSettings::SLEEP_SCREEN_MODE::COVER_TRANSPARENT) {
       return renderCoverSleepScreen();
     }
     return renderTransparentCustomSleepScreen();
@@ -625,13 +625,13 @@ void SleepActivity::onEnter() {
   }
 
   switch (SETTINGS.sleepScreen) {
-    case (CrossPointSettings::SLEEP_SCREEN_MODE::BLANK):
+    case (WaddleSettings::SLEEP_SCREEN_MODE::BLANK):
       return renderBlankSleepScreen();
-    case (CrossPointSettings::SLEEP_SCREEN_MODE::CUSTOM):
+    case (WaddleSettings::SLEEP_SCREEN_MODE::CUSTOM):
       return renderCustomSleepScreen();
-    case (CrossPointSettings::SLEEP_SCREEN_MODE::COVER):
+    case (WaddleSettings::SLEEP_SCREEN_MODE::COVER):
       return renderCoverSleepScreen();
-    case (CrossPointSettings::SLEEP_SCREEN_MODE::COVER_CUSTOM):
+    case (WaddleSettings::SLEEP_SCREEN_MODE::COVER_CUSTOM):
       if (APP_STATE.lastSleepFromReader) {
         return renderCoverSleepScreen();
       } else {
@@ -651,7 +651,7 @@ void SleepActivity::renderCustomSleepScreen() const {
     Bitmap bitmap(file, true,
                   renderer.grayscaleCapabilities(sleepGrayscaleMode(renderer)).supported() &&
                       display.getController() == HalDisplay::Controller::SSD1677 &&
-                      SETTINGS.sleepScreenCoverFilter == CrossPointSettings::SLEEP_SCREEN_COVER_FILTER::NO_FILTER);
+                      SETTINGS.sleepScreenCoverFilter == WaddleSettings::SLEEP_SCREEN_COVER_FILTER::NO_FILTER);
     if (bitmap.parseHeaders() == BmpReaderError::Ok) {
       LOG_DBG("SLP", "Loading: /sleep.bmp");
       renderBitmapSleepScreen(bitmap);
@@ -672,7 +672,7 @@ void SleepActivity::renderCustomSleepScreen() const {
       Bitmap bitmap(randFile, true,
                     renderer.grayscaleCapabilities(sleepGrayscaleMode(renderer)).supported() &&
                         display.getController() == HalDisplay::Controller::SSD1677 &&
-                        SETTINGS.sleepScreenCoverFilter == CrossPointSettings::SLEEP_SCREEN_COVER_FILTER::NO_FILTER);
+                        SETTINGS.sleepScreenCoverFilter == WaddleSettings::SLEEP_SCREEN_COVER_FILTER::NO_FILTER);
       if (bitmap.parseHeaders() == BmpReaderError::Ok) {
         renderBitmapSleepScreen(bitmap);
         randFile.close();
@@ -716,7 +716,7 @@ void SleepActivity::renderBitmapSleepScreen(const Bitmap& bitmap, const bool pre
 
   const bool hasGreyscale = (bitmap.hasGreyscale() || (preserveBackground && overlayGrayCover)) &&
                             (preserveBackground || SETTINGS.sleepScreenCoverFilter ==
-                                                       CrossPointSettings::SLEEP_SCREEN_COVER_FILTER::NO_FILTER);
+                                                       WaddleSettings::SLEEP_SCREEN_COVER_FILTER::NO_FILTER);
 
   if (!renderer.drawBitmap(bitmap, x, y, pageWidth, pageHeight, cropX, cropY, preserveBackground)) {
     renderer.displayBuffer(kSleepClean);
@@ -724,7 +724,7 @@ void SleepActivity::renderBitmapSleepScreen(const Bitmap& bitmap, const bool pre
   }
 
   if (!preserveBackground &&
-      SETTINGS.sleepScreenCoverFilter == CrossPointSettings::SLEEP_SCREEN_COVER_FILTER::INVERTED_BLACK_AND_WHITE) {
+      SETTINGS.sleepScreenCoverFilter == WaddleSettings::SLEEP_SCREEN_COVER_FILTER::INVERTED_BLACK_AND_WHITE) {
     renderer.invertScreen();
   }
 
@@ -895,10 +895,10 @@ void SleepActivity::renderCoverSleepScreen() const {
   void (SleepActivity::*renderNoCoverSleepScreen)() const;
   bool withOverlay = false;
   switch (SETTINGS.sleepScreen) {
-    case (CrossPointSettings::SLEEP_SCREEN_MODE::COVER_CUSTOM):
+    case (WaddleSettings::SLEEP_SCREEN_MODE::COVER_CUSTOM):
       renderNoCoverSleepScreen = &SleepActivity::renderCustomSleepScreen;
       break;
-    case (CrossPointSettings::SLEEP_SCREEN_MODE::COVER_TRANSPARENT):
+    case (WaddleSettings::SLEEP_SCREEN_MODE::COVER_TRANSPARENT):
       renderNoCoverSleepScreen = &SleepActivity::renderTransparentCustomSleepScreen;
       withOverlay = true;
       break;
@@ -915,14 +915,14 @@ void SleepActivity::renderCoverSleepScreen() const {
   const bool originalThresholds =
       renderer.grayscaleCapabilities(sleepGrayscaleMode(renderer)).supported() &&
       display.getController() == HalDisplay::Controller::SSD1677 &&
-      SETTINGS.sleepScreenCoverFilter == CrossPointSettings::SLEEP_SCREEN_COVER_FILTER::NO_FILTER;
+      SETTINGS.sleepScreenCoverFilter == WaddleSettings::SLEEP_SCREEN_COVER_FILTER::NO_FILTER;
   std::string coverBmpPath;
-  bool cropped = SETTINGS.sleepScreenCoverMode == CrossPointSettings::SLEEP_SCREEN_COVER_MODE::CROP;
+  bool cropped = SETTINGS.sleepScreenCoverMode == WaddleSettings::SLEEP_SCREEN_COVER_MODE::CROP;
 
   // Check if the current book is XTC, TXT, or EPUB
   if (FsHelpers::hasXtcExtension(APP_STATE.openEpubPath)) {
     // Handle XTC file
-    Xtc lastXtc(APP_STATE.openEpubPath, "/.crosspoint");
+    Xtc lastXtc(APP_STATE.openEpubPath, "/.waddleos");
     if (!lastXtc.load()) {
       LOG_ERR("SLP", "Failed to load last XTC");
       return (this->*renderNoCoverSleepScreen)();
@@ -936,7 +936,7 @@ void SleepActivity::renderCoverSleepScreen() const {
     coverBmpPath = lastXtc.getCoverBmpPath();
   } else if (FsHelpers::hasReflowableBookExtension(APP_STATE.openEpubPath)) {
     // Handle EPUB, TXT, or Markdown file
-    Epub lastEpub(APP_STATE.openEpubPath, "/.crosspoint");
+    Epub lastEpub(APP_STATE.openEpubPath, "/.waddleos");
     // Skip loading css since we only need metadata here
     if (!lastEpub.load(true, true)) {
       LOG_ERR("SLP", "Failed to load last book");

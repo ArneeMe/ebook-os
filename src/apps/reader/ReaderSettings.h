@@ -10,7 +10,7 @@
 
 // The reader's settings: fonts and text, status bar, page turning, library.
 // Saved in the same settings.json as the core settings and under the same keys
-// as before; CrossPointSettings loads and saves them through settingsModule().
+// as before; WaddleSettings loads and saves them through settingsModule().
 class ReaderSettings {
  public:
   static ReaderSettings& getInstance() {

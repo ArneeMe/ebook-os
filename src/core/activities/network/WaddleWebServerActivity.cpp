@@ -1,4 +1,4 @@
-#include "CrossPointWebServerActivity.h"
+#include "WaddleWebServerActivity.h"
 
 #include <DNSServer.h>
 #include <ESPmDNS.h>
@@ -25,7 +25,7 @@
 
 namespace {
 // AP Mode configuration
-constexpr const char* AP_HOSTNAME = "crosspoint";
+constexpr const char* AP_HOSTNAME = "reader";
 constexpr uint8_t AP_CHANNEL = 1;
 constexpr uint8_t AP_MAX_CONNECTIONS = 4;
 constexpr int QR_CODE_WIDTH = 198;
@@ -61,7 +61,7 @@ int barsForRssi(int rssi, int currentBars) {
 }
 }  // namespace
 
-void CrossPointWebServerActivity::onEnter() {
+void WaddleWebServerActivity::onEnter() {
   Activity::onEnter();
 
   LOG_DBG("WEBACT", "Free heap at onEnter: %d bytes", ESP.getFreeHeap());
@@ -105,7 +105,7 @@ void CrossPointWebServerActivity::onEnter() {
                          });
 }
 
-void CrossPointWebServerActivity::onExit() {
+void WaddleWebServerActivity::onExit() {
   Activity::onExit();
 
   LOG_DBG("WEBACT", "Free heap at onExit start: %d bytes", ESP.getFreeHeap());
@@ -128,7 +128,7 @@ void CrossPointWebServerActivity::onExit() {
   LOG_DBG("WEBACT", "Free heap at onExit end: %d bytes", ESP.getFreeHeap());
 }
 
-void CrossPointWebServerActivity::onNetworkModeSelected(const NetworkMode mode) {
+void WaddleWebServerActivity::onNetworkModeSelected(const NetworkMode mode) {
   // Join Network brings up WiFi + the web server + TLS relays, whose working set
   // needs a large *contiguous* block. After reading/browsing the heap is
   // fragmented enough that tight boards (X3) abort mid-activation. Reboot once
@@ -182,7 +182,7 @@ void CrossPointWebServerActivity::onNetworkModeSelected(const NetworkMode mode) 
   }
 }
 
-void CrossPointWebServerActivity::onWifiSelectionComplete(const bool connected) {
+void WaddleWebServerActivity::onWifiSelectionComplete(const bool connected) {
   LOG_DBG("WEBACT", "WifiSelectionActivity completed, connected=%d", connected);
 
   if (connected) {
@@ -209,7 +209,7 @@ void CrossPointWebServerActivity::onWifiSelectionComplete(const bool connected) 
   }
 }
 
-void CrossPointWebServerActivity::startAccessPoint() {
+void WaddleWebServerActivity::startAccessPoint() {
   LOG_DBG("WEBACT", "Starting Access Point mode...");
   LOG_DBG("WEBACT", "Free heap before AP start: %d bytes", ESP.getFreeHeap());
 
@@ -259,7 +259,7 @@ void CrossPointWebServerActivity::startAccessPoint() {
   startWebServer();
 }
 
-void CrossPointWebServerActivity::startWebServer() {
+void WaddleWebServerActivity::startWebServer() {
   LOG_DBG("WEBACT", "Starting web server...");
 
   // Repeat the release right before the allocation: the WiFi selection screen
@@ -271,7 +271,7 @@ void CrossPointWebServerActivity::startWebServer() {
   }
 
   // Create the web server instance
-  webServer.reset(new CrossPointWebServer());
+  webServer.reset(new WaddleWebServer());
   // An upload holds loop() inside handleClient(), so input is sampled on each received chunk instead. On a slow
   // link chunks come ~0.5 s apart, so a button found down gets a second sample past the SDK's 5 ms debounce.
   webServer->setUploadCancelCheck([this] {
@@ -302,7 +302,7 @@ void CrossPointWebServerActivity::startWebServer() {
   }
 }
 
-void CrossPointWebServerActivity::loop() {
+void WaddleWebServerActivity::loop() {
   // Handle different states
   if (state == WebServerActivityState::SERVER_RUNNING) {
     // Handle DNS requests for captive portal (AP mode only)
@@ -424,7 +424,7 @@ void CrossPointWebServerActivity::loop() {
   }
 }
 
-void CrossPointWebServerActivity::render(RenderLock&&) {
+void WaddleWebServerActivity::render(RenderLock&&) {
   // Only render our own UI when server is running
   // Subactivities handle their own rendering
   if (state == WebServerActivityState::SERVER_RUNNING || state == WebServerActivityState::AP_STARTING) {
@@ -449,7 +449,7 @@ void CrossPointWebServerActivity::render(RenderLock&&) {
   }
 }
 
-void CrossPointWebServerActivity::renderServerRunning() const {
+void WaddleWebServerActivity::renderServerRunning() const {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const auto pageWidth = renderer.getScreenWidth();
 
@@ -535,7 +535,7 @@ void CrossPointWebServerActivity::renderServerRunning() const {
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 }
 
-void CrossPointWebServerActivity::renderWifiIndicator(int subHeaderTop) const {
+void WaddleWebServerActivity::renderWifiIndicator(int subHeaderTop) const {
   constexpr int BAR_COUNT = 4;
   constexpr int BAR_WIDTH = 4;
   constexpr int BAR_GAP = 2;

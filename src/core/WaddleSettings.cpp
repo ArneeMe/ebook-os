@@ -1,4 +1,4 @@
-#include "CrossPointSettings.h"
+#include "WaddleSettings.h"
 #include "apps/reader/ReaderSettings.h"
 
 #include <BlePageTurnerJson.h>
@@ -30,7 +30,7 @@ void copyToField(char* dest, const char* src, const size_t maxLen) {
 
 }  // namespace
 
-void CrossPointSettings::validateFrontButtonMapping(CrossPointSettings& settings) {
+void WaddleSettings::validateFrontButtonMapping(WaddleSettings& settings) {
   const uint8_t mapping[] = {settings.frontButtonBack, settings.frontButtonConfirm, settings.frontButtonLeft,
                              settings.frontButtonRight};
   for (size_t i = 0; i < 4; i++) {
@@ -46,7 +46,7 @@ void CrossPointSettings::validateFrontButtonMapping(CrossPointSettings& settings
   }
 }
 
-uint8_t CrossPointSettings::sleepTimeoutEnumToMinutes(const uint8_t legacyValue) {
+uint8_t WaddleSettings::sleepTimeoutEnumToMinutes(const uint8_t legacyValue) {
   switch (legacyValue) {
     case SLEEP_1_MIN:
       return 1;
@@ -62,8 +62,8 @@ uint8_t CrossPointSettings::sleepTimeoutEnumToMinutes(const uint8_t legacyValue)
   }
 }
 
-void CrossPointSettings::toJson(JsonDocument& doc) const {
-  const CrossPointSettings& s = *this;
+void WaddleSettings::toJson(JsonDocument& doc) const {
+  const WaddleSettings& s = *this;
 
   auto visit = [&](const SettingInfo& info) {
     if (!info.key) return;
@@ -103,8 +103,8 @@ void CrossPointSettings::toJson(JsonDocument& doc) const {
   for (const SettingsModule* module : settingsModules()) module->toJson(doc);
 }
 
-bool CrossPointSettings::fromJson(JsonVariantConst doc) {
-  CrossPointSettings& s = *this;
+bool WaddleSettings::fromJson(JsonVariantConst doc) {
+  WaddleSettings& s = *this;
   bool needsResave = false;
 
   auto clamp = [](uint8_t val, uint8_t maxVal, uint8_t def) -> uint8_t { return val < maxVal ? val : def; };
@@ -226,14 +226,14 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
   return true;
 }
 
-unsigned long CrossPointSettings::getSleepTimeoutMs() const {
+unsigned long WaddleSettings::getSleepTimeoutMs() const {
   if (sleepTimeoutMinutes >= SLEEP_TIMEOUT_NEVER_MINUTES) return 0UL;
   const uint8_t minutes =
       std::clamp(sleepTimeoutMinutes, MIN_SLEEP_TIMEOUT_MINUTES, static_cast<uint8_t>(SLEEP_TIMEOUT_NEVER_MINUTES - 1));
   return static_cast<unsigned long>(minutes) * 60UL * 1000UL;
 }
 
-int CrossPointSettings::getRefreshFrequency() const {
+int WaddleSettings::getRefreshFrequency() const {
   switch (refreshFrequency) {
     case REFRESH_1:
       return 1;

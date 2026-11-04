@@ -9,12 +9,12 @@
 
 #include "core/util/HomeButtonInput.h"
 
-class CrossPointSettings : public PersistableStore<CrossPointSettings> {
+class WaddleSettings : public PersistableStore<WaddleSettings> {
  private:
   // Private constructor for singleton
-  CrossPointSettings() = default;
+  WaddleSettings() = default;
 
-  friend class PersistableStore<CrossPointSettings>;
+  friend class PersistableStore<WaddleSettings>;
 
  public:
   enum SLEEP_SCREEN_MODE {
@@ -202,13 +202,13 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   static constexpr uint8_t MAX_SLEEP_TIMEOUT_MINUTES = SLEEP_TIMEOUT_NEVER_MINUTES;
 
   uint16_t getPowerButtonDuration() const {
-    return (shortPwrBtn == CrossPointSettings::SHORT_PWRBTN::SLEEP) ? 10 : 400;
+    return (shortPwrBtn == WaddleSettings::SHORT_PWRBTN::SLEEP) ? 10 : 400;
   }
-  static const char* getFilePath() { return "/.crosspoint/settings.json"; }
+  static const char* getFilePath() { return "/.waddleos/settings.json"; }
   void toJson(JsonDocument& doc) const;
   bool fromJson(JsonVariantConst doc);
 
-  static void validateFrontButtonMapping(CrossPointSettings& settings);
+  static void validateFrontButtonMapping(WaddleSettings& settings);
   static uint8_t sleepTimeoutEnumToMinutes(uint8_t legacyValue);
 
   unsigned long getSleepTimeoutMs() const;
@@ -216,4 +216,4 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
 };
 
 // Helper macro to access settings
-#define SETTINGS CrossPointSettings::getInstance()
+#define SETTINGS WaddleSettings::getInstance()

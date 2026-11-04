@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "core/CrossPointSettings.h"
+#include "core/WaddleSettings.h"
 #include "SettingsSection.h"
 #include "core/activities/UiListActivity.h"
 #include "core/components/OptionPopup.h"
@@ -31,7 +31,7 @@ enum class SettingAction {
 struct SettingInfo {
   StrId nameId;
   SettingType type;
-  uint8_t* valuePtr = nullptr;  // the value, in CrossPointSettings or an app's settings
+  uint8_t* valuePtr = nullptr;  // the value, in WaddleSettings or an app's settings
   std::vector<StrId> enumValues;
   std::span<const StrId> staticEnumValues;
   std::vector<std::string> enumStringValues;  // runtime alternative to StrId enumValues (for SD card fonts etc.)
@@ -51,11 +51,11 @@ struct SettingInfo {
 
   bool webHidden = false;  // Persisted normally, but omitted from the generic Web Settings API
 
-  // Direct char[] string fields (for settings stored in CrossPointSettings or an app's settings)
+  // Direct char[] string fields (for settings stored in WaddleSettings or an app's settings)
   char* stringPtr = nullptr;
   size_t stringMaxLen = 0;
 
-  // Dynamic accessors (for settings stored outside CrossPointSettings, e.g. KOReaderCredentialStore)
+  // Dynamic accessors (for settings stored outside WaddleSettings, e.g. KOReaderCredentialStore)
   std::function<uint8_t()> valueGetter;
   std::function<void(uint8_t)> valueSetter;
   std::function<std::string()> stringGetter;

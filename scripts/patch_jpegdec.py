@@ -1,5 +1,5 @@
 """
-PlatformIO pre-build script: apply CrossPoint's JPEGDEC patches via `git apply`.
+PlatformIO pre-build script: apply Waddle's JPEGDEC patches via `git apply`.
 
 The upstream JPEGDEC pin still has progressive grayscale bugs in
 JPEGDecodeMCU_P, including unsafe MCU_SKIP writes and attempts to consume

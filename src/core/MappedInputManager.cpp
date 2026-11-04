@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <cstdlib>
 
-#include "CrossPointSettings.h"
+#include "WaddleSettings.h"
 #include "core/components/HeaderBackTapTarget.h"
 #include "core/components/UITheme.h"
 
@@ -19,8 +19,8 @@ void MappedInputManager::update(const bool deferHomeButtonAction) const {
   remoteInput.reset();
   gpio.update();
   const bool pagePressed =
-      SETTINGS.vibration == CrossPointSettings::VIBRATION_TOUCH_PAGE && gpio.wasCapacitivePagePressed();
-  HalHaptics::feedback(SETTINGS.vibration != CrossPointSettings::VIBRATION_OFF, pagePressed, SETTINGS.hapticIntensity);
+      SETTINGS.vibration == WaddleSettings::VIBRATION_TOUCH_PAGE && gpio.wasCapacitivePagePressed();
+  HalHaptics::feedback(SETTINGS.vibration != WaddleSettings::VIBRATION_OFF, pagePressed, SETTINGS.hapticIntensity);
   homeAction = HomeButtonAction::Ignore;
   if (gpio.hasHomeKey()) {
     homeAction = homeButtonInput.update(millis(), gpio.wasHomeKeyTapped(), gpio.wasHomeKeyLongPressed(),
@@ -29,22 +29,22 @@ void MappedInputManager::update(const bool deferHomeButtonAction) const {
                                         static_cast<HomeButtonAction>(SETTINGS.homeButtonDoubleTapAction),
                                         static_cast<HomeButtonAction>(SETTINGS.homeButtonLongPressAction));
     if (gpio.wasHomeKeyLongPressed() && homeAction != HomeButtonAction::Ignore) {
-      HalHaptics::longPress(SETTINGS.vibration != CrossPointSettings::VIBRATION_OFF, SETTINGS.hapticIntensity);
+      HalHaptics::longPress(SETTINGS.vibration != WaddleSettings::VIBRATION_OFF, SETTINGS.hapticIntensity);
     } else if (homeAction != HomeButtonAction::Ignore) {
-      HalHaptics::feedback(SETTINGS.vibration != CrossPointSettings::VIBRATION_OFF, true, SETTINGS.hapticIntensity);
+      HalHaptics::feedback(SETTINGS.vibration != WaddleSettings::VIBRATION_OFF, true, SETTINGS.hapticIntensity);
     }
   }
   // Touch boards without a home key: a short power click can carry a reader
   // shortcut (see SHORT_PWRBTN).
   if (homeAction == HomeButtonAction::Ignore && mapButton(Button::Power, &HalGPIO::wasReleased)) {
     switch (SETTINGS.shortPwrBtn) {
-      case CrossPointSettings::PWR_BOOKMARK:
+      case WaddleSettings::PWR_BOOKMARK:
         homeAction = HomeButtonAction::Bookmark;
         break;
-      case CrossPointSettings::PWR_SYNC:
+      case WaddleSettings::PWR_SYNC:
         homeAction = HomeButtonAction::Sync;
         break;
-      case CrossPointSettings::PWR_READER_MENU:
+      case WaddleSettings::PWR_READER_MENU:
         homeAction = HomeButtonAction::ReaderMenu;
         break;
       default:
@@ -134,28 +134,28 @@ bool MappedInputManager::mapButton(const Button button, bool (HalGPIO::*fn)(uint
     case Button::PageBack:
       // Reader page navigation uses side buttons and can be swapped via settings.
       switch (sideLayout) {
-        case CrossPointSettings::PREV_NEXT:
+        case WaddleSettings::PREV_NEXT:
           return (gpio.*fn)(isNavDirectionSwapped() ? HalGPIO::BTN_DOWN : HalGPIO::BTN_UP);
-        case CrossPointSettings::NEXT_PREV:
+        case WaddleSettings::NEXT_PREV:
           return (gpio.*fn)(isNavDirectionSwapped() ? HalGPIO::BTN_UP : HalGPIO::BTN_DOWN);
-        case CrossPointSettings::PREV_PREV:
+        case WaddleSettings::PREV_PREV:
           return (gpio.*fn)(HalGPIO::BTN_UP) || (gpio.*fn)(HalGPIO::BTN_DOWN);
-        case CrossPointSettings::NEXT_NEXT:
-        case CrossPointSettings::SIDE_BUTTONS_DISABLED:
+        case WaddleSettings::NEXT_NEXT:
+        case WaddleSettings::SIDE_BUTTONS_DISABLED:
         default:
           return false;
       }
     case Button::PageForward:
       // Reader page navigation uses side buttons and can be swapped via settings.
       switch (sideLayout) {
-        case CrossPointSettings::PREV_NEXT:
+        case WaddleSettings::PREV_NEXT:
           return (gpio.*fn)(isNavDirectionSwapped() ? HalGPIO::BTN_UP : HalGPIO::BTN_DOWN);
-        case CrossPointSettings::NEXT_PREV:
+        case WaddleSettings::NEXT_PREV:
           return (gpio.*fn)(isNavDirectionSwapped() ? HalGPIO::BTN_DOWN : HalGPIO::BTN_UP);
-        case CrossPointSettings::NEXT_NEXT:
+        case WaddleSettings::NEXT_NEXT:
           return (gpio.*fn)(HalGPIO::BTN_UP) || (gpio.*fn)(HalGPIO::BTN_DOWN);
-        case CrossPointSettings::PREV_PREV:
-        case CrossPointSettings::SIDE_BUTTONS_DISABLED:
+        case WaddleSettings::PREV_PREV:
+        case WaddleSettings::SIDE_BUTTONS_DISABLED:
         default:
           return false;
       }
@@ -373,7 +373,7 @@ bool MappedInputManager::wasLightPanelGesture() const {
 
 #if FREEINK_CAP_TOUCH
 bool MappedInputManager::wasPowerConfirmClick() const {
-  if (!gpio.hasTouch() || SETTINGS.shortPwrBtn != CrossPointSettings::SHORT_PWRBTN::PWR_CONFIRM) return false;
+  if (!gpio.hasTouch() || SETTINGS.shortPwrBtn != WaddleSettings::SHORT_PWRBTN::PWR_CONFIRM) return false;
   // Wait out the X4 Pro's frontlight double-click window before treating its
   // first release as Confirm. With the shortcut disabled, and on other touch
   // boards, the release counts directly.
@@ -423,7 +423,7 @@ bool MappedInputManager::wasLongPressed(const Button button, const unsigned long
   longPressFiredButtons |= bit;
   suppressNextRelease(button);
   if (mapButton(button, &HalGPIO::isCapacitivePagePressed)) {
-    HalHaptics::longPress(SETTINGS.vibration == CrossPointSettings::VIBRATION_TOUCH_PAGE, SETTINGS.hapticIntensity);
+    HalHaptics::longPress(SETTINGS.vibration == WaddleSettings::VIBRATION_TOUCH_PAGE, SETTINGS.hapticIntensity);
   }
   return true;
 }
