@@ -320,8 +320,10 @@ void ChatActivity::loop() {
       menuOpen = false;
       if (pollBox.contains(x, y)) {
         askQuestion();
-      } else if (gameBox.contains(x, y) || chessBox.contains(x, y)) {
-        const auto game = chessBox.contains(x, y) ? mesh::play::Game::Chess : mesh::play::Game::FourInRow;
+      } else if (gameBox.contains(x, y) || chessBox.contains(x, y) || shipsBox.contains(x, y)) {
+        const auto game = chessBox.contains(x, y)   ? mesh::play::Game::Chess
+                          : shipsBox.contains(x, y) ? mesh::play::Game::Ships
+                                                    : mesh::play::Game::FourInRow;
         node().sendText(conversation, mesh::play::writeGame(game));
         scroll = 0;
         reload();
@@ -459,16 +461,17 @@ void ChatActivity::render(RenderLock&&) {
   if (messages.empty()) renderer.drawCenteredText(UI_12_FONT_ID, top + 40, "Ingen meldinger ennå. Si hei!");
 
   // "+": what can be started here, above the input bar.
-  pollBox = gameBox = chessBox = {};
+  pollBox = gameBox = chessBox = shipsBox = {};
   if (menuOpen) {
     const int bh = 70;
-    pollBox = {SIDE, inputY - 3 * (bh + 12), width - 2 * SIDE, bh};
-    gameBox = {SIDE, inputY - 2 * (bh + 12), width - 2 * SIDE, bh};
-    chessBox = {SIDE, inputY - (bh + 12), width - 2 * SIDE, bh};
+    pollBox = {SIDE, inputY - 4 * (bh + 12), width - 2 * SIDE, bh};
+    gameBox = {SIDE, inputY - 3 * (bh + 12), width - 2 * SIDE, bh};
+    chessBox = {SIDE, inputY - 2 * (bh + 12), width - 2 * SIDE, bh};
+    shipsBox = {SIDE, inputY - (bh + 12), width - 2 * SIDE, bh};
     renderer.fillRect(0, pollBox.y - 16, width, inputY - pollBox.y + 16, false);
     renderer.drawLine(0, pollBox.y - 16, width - 1, pollBox.y - 16, 2, true);
     for (const auto& [box, label] : {std::make_pair(pollBox, "Avstemning"), std::make_pair(gameBox, "Fire på rad"),
-                                     std::make_pair(chessBox, "Sjakk")}) {
+                                     std::make_pair(chessBox, "Sjakk"), std::make_pair(shipsBox, "Senk skipet")}) {
       renderer.drawRoundedRect(box.x, box.y, box.w, box.h, 2, 14, true);
       renderer.drawText(UI_12_FONT_ID, box.x + 24, box.y + 20, label, true, EpdFontFamily::BOLD);
     }

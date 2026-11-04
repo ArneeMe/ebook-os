@@ -95,3 +95,28 @@ class ChessActivity final : public Activity {
   void send(const std::string& move);
 };
 
+// Senk skipet, full screen: tap a square on the sea above, then "Skyt". Your
+// own sea, with the other's shots, is below.
+class ShipsActivity final : public Activity {
+ public:
+  ShipsActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, uint8_t conversation, mesh::play::Ref game);
+  void onEnter() override;
+  void loop() override;
+  void render(RenderLock&&) override;
+
+ private:
+  uint8_t conversation;
+  mesh::play::Ref game;
+  mesh::play::GameState state;
+  mesh::play::ShipLayout mine;
+  bool known = false;
+  int target = -1;
+  bool sure = false;
+  uint32_t shownChanges = 0;
+  int boardX = 0, boardY = 0, cell = 1;
+  int buttonY = 0;
+
+  void reload();
+  bool myTurn() const;
+  void send(const std::string& move);
+};

@@ -88,8 +88,8 @@ like the key files, so the card alone shows nothing. When "Ny identitet" comes
 history still opens.
 
 Done: polls and Fire på rad in any chat, on the units and the phone ("+" next
-to the input; protocol/PROTOCOL.md, "Polls and games"). Sjakk works the same
-way. Next, maybe: Senk skipet (the ships never leave the unit; the other
+to the input; protocol/PROTOCOL.md, "Polls and games"). Sjakk and Senk skipet
+work the same way (the ships never leave the unit; the other
 gets only "treff" or "bom").
 
 Before calling it done: **a screen-by-screen look** (the units, the reader and

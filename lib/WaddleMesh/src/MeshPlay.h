@@ -23,7 +23,7 @@ constexpr size_t MAX_QUESTION = 200;
 constexpr size_t MAX_OPTION = 60;
 
 enum class Kind : char { Poll = 'A', Vote = 'a', Game = 'S', Move = 'm' };
-enum class Game : char { FourInRow = 'F', Chess = 'C' };
+enum class Game : char { FourInRow = 'F', Chess = 'C', Ships = 'B' };
 
 // A poll or a game: the device that sent it and its counter.
 struct Ref {
@@ -110,6 +110,35 @@ struct Chess {
   static std::string squareName(int square);  // 12 -> "e2"
 };
 
+// Senk skipet: 8 × 8, ships of 4, 3, 2 and 2. Each player's ships come from a
+// secret both of their devices have (shipLayout), so they never leave them.
+// A move answers the other's last shot and fires one: "h" hit, "m" miss,
+// "s" sunk, then the square ("-d4" for the first move, with nothing to
+// answer); "w" alone: that was my last ship, I lost. Results cannot be checked
+// by the shooter: friends do not cheat.
+struct Ships {
+  static constexpr int SIZE = 8;
+  static constexpr int SHIPS[4] = {4, 3, 2, 2};
+  struct Shot {
+    int square = 0;   // row * 8 + column, a1 = 0
+    char result = '?';  // 'h', 'm', 's', or '?' before the answer comes
+  };
+  std::vector<Shot> shots[2];  // by player 1 and 2
+  int moves = 0;
+  int winner = 0;
+
+  // A move by `player` (1 or 2); false when it does not fit.
+  bool play(int player, const std::string& move);
+};
+
+// Where my ships are in this game: ship number (1-4) per square, 0 for water.
+struct ShipLayout {
+  uint8_t cell[64] = {};
+};
+ShipLayout shipLayout(const uint8_t secret[32], Ref game);
+// My next move: the answer to the other's last shot (from my layout), then mine.
+std::string shipsMove(const Ships& ships, int myPlayer, const ShipLayout& mine, int shot);
+
 // A game as the moves so far leave it. The one who takes the challenge makes
 // the first move and is player 1 (white in chess); the challenger is player 2.
 // In a group, whoever moves first takes it.
@@ -119,9 +148,10 @@ struct GameState {
   uint8_t opponent = 0;    // person; 0 until someone has moved
   FourInRow board;
   Chess chess;
+  Ships ships;
   int gaveUp = 0;  // the player who gave up, 0 for none
 
-  int moves() const { return game == Game::Chess ? chess.moves : board.moves; }
+  int moves() const { return game == Game::Chess ? chess.moves : game == Game::Ships ? ships.moves : board.moves; }
   // 0 playing, 1 or 2 won, 3 a draw.
   int winner() const;
   int turn() const { return moves() % 2 + 1; }

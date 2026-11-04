@@ -59,8 +59,8 @@ object Mesh {
     /** Polls and Fire på rad (lib/WaddleMesh MeshPlay.h); options one per line. */
     @JvmStatic external fun startPoll(conv: Int, question: String, options: String): Boolean
     @JvmStatic external fun vote(conv: Int, sender: Int, counter: Long, option: Int): Boolean
-    /** [kind]: "chess" or "fourinrow". */
+    /** [kind]: "chess", "ships" or "fourinrow". */
     @JvmStatic external fun startGame(conv: Int, kind: String): Boolean
-    /** My next move: a column "0"-"6", "e2e4" (chess) or "x" (give up). */
+    /** My next move: a column "0"-"6", "e2e4" (chess), a square "d4" (Senk skipet) or "x" (give up). */
     @JvmStatic external fun move(conv: Int, sender: Int, counter: Long, move: String): Boolean
 }

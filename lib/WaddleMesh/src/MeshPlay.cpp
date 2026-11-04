@@ -1,5 +1,7 @@
 #include "MeshPlay.h"
 
+#include <monocypher.h>
+
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
@@ -81,7 +83,7 @@ bool read(const std::string& text, Play& out) {
     }
     case Kind::Game:
       out.game = Game(text.size() == 3 ? text[2] : 0);
-      return out.game == Game::FourInRow || out.game == Game::Chess;
+      return out.game == Game::FourInRow || out.game == Game::Chess || out.game == Game::Ships;
     case Kind::Move: {
       uint32_t number = 0;
       if (!readRef(text, out.of) || !hex(text, 2 + REF_SIZE, 4, number) || number == 0) return false;
@@ -130,7 +132,9 @@ std::string preview(const std::string& text) {
     case Kind::Vote:
       return "stemte";
     case Kind::Game:
-      return p.game == Game::Chess ? "utfordrer til sjakk" : "utfordrer til fire på rad";
+      return p.game == Game::Chess   ? "utfordrer til sjakk"
+             : p.game == Game::Ships ? "utfordrer til senk skipet"
+                                     : "utfordrer til fire på rad";
     case Kind::Move:
       return "gjorde et trekk";
   }
@@ -356,8 +360,109 @@ bool Chess::play(const std::string& move) {
   return true;
 }
 
+// --- Senk skipet ---
+
+constexpr int Ships::SHIPS[4];
+
+namespace {
+int squareOf(const std::string& s, const size_t at) {
+  if (s.size() < at + 2 || s[at] < 'a' || s[at] >= 'a' + Ships::SIZE || s[at + 1] < '1' || s[at + 1] >= '1' + Ships::SIZE) {
+    return -1;
+  }
+  return (s[at + 1] - '1') * Ships::SIZE + (s[at] - 'a');
+}
+}  // namespace
+
+bool Ships::play(const int player, const std::string& move) {
+  if (winner || (player != 1 && player != 2) || move.empty()) return false;
+  auto& theirs = shots[2 - player];  // the other player's shots, the last one answered now
+  const char result = move[0];
+  if (moves == 0 ? result != '-' : result != 'h' && result != 'm' && result != 's' && result != 'w') return false;
+  if (result == 'w') {
+    if (move.size() != 1 || theirs.empty()) return false;
+    theirs.back().result = 's';
+    winner = 3 - player;
+    moves++;
+    return true;
+  }
+  const int square = move.size() == 3 ? squareOf(move, 1) : -1;
+  if (square < 0) return false;
+  for (const auto& s : shots[player - 1]) {
+    if (s.square == square) return false;  // fired there before
+  }
+  if (moves > 0) {
+    if (theirs.empty()) return false;
+    theirs.back().result = result;
+  }
+  shots[player - 1].push_back({square, '?'});
+  moves++;
+  return true;
+}
+
+ShipLayout shipLayout(const uint8_t secret[32], const Ref game) {
+  // A random-looking but fixed layout: BLAKE2b of the secret and the game.
+  uint8_t input[32 + 5], seed[64];
+  memcpy(input, secret, 32);
+  input[32] = game.sender;
+  memcpy(input + 33, &game.counter, 4);
+  crypto_blake2b(seed, sizeof(seed), input, sizeof(input));
+  size_t at = 0;
+  auto next = [&](const int n) {
+    if (at + 2 > sizeof(seed)) {
+      crypto_blake2b(seed, sizeof(seed), seed, sizeof(seed));
+      at = 0;
+    }
+    const int v = (seed[at] << 8 | seed[at + 1]) % n;
+    at += 2;
+    return v;
+  };
+  ShipLayout out;
+  for (int ship = 0; ship < 4; ship++) {
+    const int len = Ships::SHIPS[ship];
+    for (int tries = 0; tries < 200; tries++) {
+      const bool across = next(2);
+      const int col = next(Ships::SIZE - (across ? len - 1 : 0)), row = next(Ships::SIZE - (across ? 0 : len - 1));
+      bool free = true;
+      // Not on or next to another ship.
+      for (int i = 0; i < len && free; i++) {
+        const int c = col + (across ? i : 0), r = row + (across ? 0 : i);
+        for (int dr = -1; dr <= 1; dr++) {
+          for (int dc = -1; dc <= 1; dc++) {
+            const int rr = r + dr, cc = c + dc;
+            if (rr >= 0 && rr < Ships::SIZE && cc >= 0 && cc < Ships::SIZE && out.cell[rr * Ships::SIZE + cc]) free = false;
+          }
+        }
+      }
+      if (!free) continue;
+      for (int i = 0; i < len; i++) out.cell[(row + (across ? 0 : i)) * Ships::SIZE + col + (across ? i : 0)] = uint8_t(ship + 1);
+      break;
+    }
+  }
+  return out;
+}
+
+std::string shipsMove(const Ships& ships, const int myPlayer, const ShipLayout& mine, const int shot) {
+  const std::string square{char('a' + shot % Ships::SIZE), char('1' + shot / Ships::SIZE)};
+  const auto& theirs = ships.shots[2 - myPlayer];
+  if (ships.moves == 0 || theirs.empty()) return "-" + square;
+  const int hit = mine.cell[theirs.back().square];
+  if (!hit) return "m" + square;
+  // Sunk when every square of that ship has been fired at; all sunk: I lost.
+  bool shipGone = true, allGone = true;
+  for (int sq = 0; sq < 64; sq++) {
+    if (!mine.cell[sq]) continue;
+    bool fired = false;
+    for (const auto& s : theirs) fired = fired || s.square == sq;
+    if (!fired && mine.cell[sq] == hit) shipGone = false;
+    if (!fired) allGone = false;
+  }
+  if (allGone) return "w";
+  return (shipGone ? "s" : "h") + square;
+}
+
 int GameState::winner() const {
   if (gaveUp) return gaveUp == 1 ? 2 : 1;
+  if (game == Game::Ships) return ships.winner;
   return game == Game::Chess ? chess.winner : board.winner;
 }
 
@@ -411,6 +516,8 @@ bool replay(const Ref game, const std::vector<Entry>& entries, GameState& out) {
       bool ok = false;
       if (out.game == Game::Chess) {
         ok = out.chess.play(moves[i].move);
+      } else if (out.game == Game::Ships) {
+        ok = out.ships.play(out.moves() == 0 ? 1 : out.playerOf(who), moves[i].move);
       } else {
         ok = moves[i].move.size() == 1 && out.board.drop(moves[i].move[0] - '0');
       }

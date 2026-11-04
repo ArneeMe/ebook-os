@@ -83,7 +83,7 @@ class GroupInfoActivity final : public Activity {
 };
 
 // One conversation: messages as bubbles, a field to write in. "+" starts a
-// poll or a game (Fire på rad, Sjakk); they show as cards (PlayUi.h).
+// poll or a game (Fire på rad, Sjakk, Senk skipet); they show as cards (PlayUi.h).
 class ChatActivity final : public Activity {
  public:
   ChatActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, uint8_t conversation);
@@ -109,7 +109,7 @@ class ChatActivity final : public Activity {
   std::string name;
   int titleBottom = 0;  // tapping above it opens a group's members
 
-  Box plusBox, pollBox, gameBox, chessBox;
+  Box plusBox, pollBox, gameBox, chessBox, shipsBox;
   bool menuOpen = false;  // "+" tapped: Avstemning and Fire på rad show
   std::string draftQuestion;
   std::vector<std::string> draftOptions;

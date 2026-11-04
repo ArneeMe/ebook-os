@@ -91,11 +91,12 @@ class ChatActivity : Activity() {
 
     private fun plus() {
         AlertDialog.Builder(this)
-            .setItems(arrayOf("Avstemning", "Fire på rad", "Sjakk")) { _, which ->
+            .setItems(arrayOf("Avstemning", "Fire på rad", "Sjakk", "Senk skipet")) { _, which ->
                 when (which) {
                     0 -> newPoll()
                     1 -> act { Mesh.startGame(conv, "fourinrow") }
-                    else -> act { Mesh.startGame(conv, "chess") }
+                    2 -> act { Mesh.startGame(conv, "chess") }
+                    else -> act { Mesh.startGame(conv, "ships") }
                 }
             }
             .show()
@@ -148,6 +149,8 @@ class ChatActivity : Activity() {
             m.has("poll") -> box.addView(pollCard(m), LinearLayout.LayoutParams(-1, -2))
             m.has("game") && m.getJSONObject("game").optString("kind") == "chess" ->
                 box.addView(chessCard(m), LinearLayout.LayoutParams(-1, -2))
+            m.has("game") && m.getJSONObject("game").optString("kind") == "ships" ->
+                box.addView(shipsCard(m), LinearLayout.LayoutParams(-1, -2))
             m.has("game") -> box.addView(gameCard(m), LinearLayout.LayoutParams(-1, -2))
             else -> {
                 val text = Ui.text(this, m.optString("text"), 16f, color = if (mine) Color.WHITE else Ui.INK)
@@ -275,6 +278,51 @@ class ChatActivity : Activity() {
             grid.addView(line)
         }
         box.addView(grid, LinearLayout.LayoutParams(-1, -2))
+        if (game.optBoolean("mine") && !game.optBoolean("over")) {
+            box.addView(Ui.button(this, "Gi opp", filled = false) {
+                AlertDialog.Builder(this)
+                    .setTitle("Gi opp partiet?")
+                    .setPositiveButton("Gi opp") { _, _ -> act { Mesh.move(conv, sender, counter, "x") } }
+                    .setNegativeButton("Avbryt", null)
+                    .show()
+            })
+        }
+        return box
+    }
+
+    /** Senk skipet: tap a square on their sea to fire; my own sea is below. */
+    private fun shipsCard(m: JSONObject): LinearLayout {
+        val game = m.getJSONObject("game")
+        val sender = m.optInt("sender")
+        val counter = m.optLong("counter")
+        val box = card()
+        box.addView(Ui.text(this, "Senk skipet", 17f, bold = true))
+        box.addView(Ui.text(this, game.optString("players"), 13f, color = Ui.DIM))
+        box.addView(Ui.text(this, game.optString("status"), 15f, bold = true))
+        val canMove = game.optBoolean("canMove")
+        fun sea(cells: String, size: Int, fire: Boolean): LinearLayout {
+            val grid = Ui.column(this)
+            grid.setPadding(0, Ui.dp(this, 8), 0, 0)
+            for (row in 0 until 8) {
+                val line = Ui.row(this)
+                for (col in 0 until 8) {
+                    val c = cells.getOrNull(row * 8 + col) ?: '.'
+                    val glyph = when (c) { 'm' -> "·"; 'h', 'x' -> "✕"; 's' -> "■"; '?' -> "○"; else -> "" }
+                    val cell = Ui.text(this, glyph, if (size > 30) 20f else 12f).apply { gravity = Gravity.CENTER }
+                    cell.background = Ui.rounded(if (c == 'o' || c == 'x') Ui.LINE else Color.WHITE, 0f, 1, Ui.LINE)
+                    if (fire && canMove && c == '.') {
+                        val name = "${'a' + col}${8 - row}"
+                        cell.setOnClickListener { act { Mesh.move(conv, sender, counter, name) } }
+                    }
+                    line.addView(cell, LinearLayout.LayoutParams(Ui.dp(this, size), Ui.dp(this, size)))
+                }
+                grid.addView(line)
+            }
+            return grid
+        }
+        box.addView(sea(game.optString("board"), 38, true))
+        box.addView(Ui.text(this, "Ditt hav", 13f, bold = true).apply { setPadding(0, Ui.dp(this@ChatActivity, 10), 0, 0) })
+        box.addView(sea(game.optString("sea"), 20, false))
         if (game.optBoolean("mine") && !game.optBoolean("over")) {
             box.addView(Ui.button(this, "Gi opp", filled = false) {
                 AlertDialog.Builder(this)
