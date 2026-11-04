@@ -84,9 +84,19 @@ class HalStorage {
   std::vector<String> listFiles(const char* path = "/", int maxFiles = 200) {
     std::vector<String> names;
     std::error_code ec;
+    // Files only, as on the device (SDCardManager skips folders).
     for (const auto& e : std::filesystem::directory_iterator(full(path), ec)) {
       if (int(names.size()) >= maxFiles) break;
-      names.emplace_back(e.path().filename().string().c_str());
+      if (!e.is_directory()) names.emplace_back(e.path().filename().string().c_str());
+    }
+    return names;
+  }
+  std::vector<String> listDirs(const char* path, int maxDirs = 200) {
+    std::vector<String> names;
+    std::error_code ec;
+    for (const auto& e : std::filesystem::directory_iterator(full(path), ec)) {
+      if (int(names.size()) >= maxDirs) break;
+      if (e.is_directory()) names.emplace_back(e.path().filename().string().c_str());
     }
     return names;
   }

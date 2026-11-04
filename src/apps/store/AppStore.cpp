@@ -29,7 +29,7 @@ bool validFile(const std::string& f) {
 
 std::vector<Manifest> installed() {
   std::vector<Manifest> out;
-  for (const auto& name : Storage.listFiles(DIR, 100)) {
+  for (const auto& name : Storage.listDirs(DIR, 100)) {
     Manifest m;
     if (readManifest(name.c_str(), m)) out.push_back(m);
   }

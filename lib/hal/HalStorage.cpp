@@ -127,6 +127,20 @@ std::vector<String> HalStorage::listFiles(const char* path, int maxFiles) {
   HAL_STORAGE_WRAPPED_CALL(listFiles, path, maxFiles);
 }
 
+std::vector<String> HalStorage::listDirs(const char* path, const int maxDirs) {
+  std::vector<String> out;
+  HalFile dir = open(path);
+  if (!dir || !dir.isDirectory()) return out;
+  char name[128];
+  for (HalFile f = dir.openNextFile(); f && int(out.size()) < maxDirs; f = dir.openNextFile()) {
+    if (f.isDirectory()) {
+      f.getName(name, sizeof(name));
+      out.emplace_back(name);
+    }
+  }
+  return out;
+}
+
 String HalStorage::readFile(const char* path) { HAL_STORAGE_WRAPPED_CALL(readFile, path); }
 
 bool HalStorage::readFileToStream(const char* path, Print& out, size_t chunkSize) {
