@@ -67,14 +67,27 @@ def bar(done, total, start):
 
 # --- The other tools, run as they are ------------------------------------------
 
+def fetch_tool(name):
+    """tools/<name> from GitHub. Many phones share one address on mobile data, and
+    GitHub then answers 429 for a while: wait a little and ask again."""
+    for wait in (5, 15, 30, None):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(RAW + name, headers=HEADERS), timeout=20) as r:
+                return r.read()
+        except urllib.error.HTTPError as e:
+            if e.code != 429 or wait is None:
+                raise
+            print(f"GitHub says wait (429); trying again in {wait} s ...", file=sys.stderr)
+            time.sleep(wait)
+
+
 def run_tool(name, args, interpreter):
     """Runs tools/<name> from next to this file, or from GitHub when piped through curl."""
     here = os.path.dirname(os.path.abspath(sys.argv[0])) if sys.argv[0] not in ("", "-") else ""
     local = os.path.join(here, name) if here else ""
     if local and os.path.isfile(local):
         return subprocess.call([interpreter, local, *args])
-    with urllib.request.urlopen(urllib.request.Request(RAW + name, headers=HEADERS), timeout=20) as r:
-        script = r.read()
+    script = fetch_tool(name)
     stdin_args = ["-", *args] if interpreter == "python3" else ["-s", "--", *args]
     return subprocess.run([interpreter, *stdin_args], input=script).returncode
 
