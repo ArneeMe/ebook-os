@@ -19,5 +19,8 @@ void registerRoutes(WebServer& server);
 bool takeNetworkChanged();
 // The setup code to show on the File Transfer screen, or nullptr before a tool pairs.
 const char* setupCode();
+// Tapped on the File Transfer screen: the code matched (MeshPairing.h, approve).
+bool setupApproved();
+void approveSetup();
 
 }  // namespace mesh::web

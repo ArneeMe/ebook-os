@@ -17,6 +17,7 @@ struct State {
   uint8_t tool[KEY_SIZE] = {};
   bool committed = false;
   bool paired = false;
+  bool approved = false;
   char code[8] = "";
 };
 State state;
@@ -32,6 +33,7 @@ std::string start(const std::string& commitHex) {
   esp_fill_random(state.unitNonce, sizeof(state.unitNonce));
   state.committed = true;
   state.paired = false;
+  state.approved = false;
   return toHex(state.unitNonce, sizeof(state.unitNonce));
 }
 
@@ -51,10 +53,14 @@ bool reveal(const std::string& toolHex, const std::string& nonceHex) {
 
 const char* code() { return state.paired ? state.code : nullptr; }
 
+void approve() { state.approved = state.paired; }
+bool approved() { return state.paired && state.approved; }
+bool waitingForApproval() { return state.paired && !state.approved; }
+
 std::string open(const std::string& toolHex, const std::string& boxHex) {
   uint8_t tool[KEY_SIZE];
   // Only from the key whose code the person compared on the screen.
-  if (!state.paired || !fromHex(toolHex.c_str(), tool, KEY_SIZE) || memcmp(tool, state.tool, KEY_SIZE) != 0) {
+  if (!approved() || !fromHex(toolHex.c_str(), tool, KEY_SIZE) || memcmp(tool, state.tool, KEY_SIZE) != 0) {
     return "";
   }
   const size_t boxLen = boxHex.size() / 2;
@@ -70,7 +76,7 @@ std::string open(const std::string& toolHex, const std::string& boxHex) {
 }
 
 std::string seal(const std::string& plain, const uint8_t nonceByte) {
-  if (!state.paired) return "";
+  if (!approved()) return "";
   std::vector<uint8_t> box(plain.size() + TAG_SIZE);
   uint8_t key[KEY_SIZE];
   keyFor(key);

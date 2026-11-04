@@ -33,8 +33,10 @@ void registerWebRoutes(WebServer& server);
 // The firmware file in the waddle-latest release that fits this device.
 const char* firmwareName();
 // An extra line on the File Transfer screen ("" for none): the mesh unit's
-// setup code, which `waddle mesh setup` asks you to compare.
+// setup code, which `waddle mesh setup` asks you to compare. A second line
+// after '\n' is drawn smaller. Tapping it (or OK) calls approveTransferNote().
 std::string transferNote();
+void approveTransferNote();
 
 // The home screen.
 std::unique_ptr<Activity> makeHome(GfxRenderer& renderer, MappedInputManager& input, bool cleanInitialRefresh);

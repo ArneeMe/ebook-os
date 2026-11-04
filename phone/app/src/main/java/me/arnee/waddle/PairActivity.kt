@@ -80,11 +80,21 @@ class PairActivity : Activity() {
     }
 
     private fun takeKeys(ip: String) {
-        say("Henter nøklene …")
+        say("Trykk på koden på T5-skjermen for å godkjenne …")
         Mesh.run {
             try {
-                val (code, body) = Server.unit(ip, "/api/mesh/phone", Mesh.pairRequest())
+                val request = Mesh.pairRequest()
+                var (code, body) = Server.unit(ip, "/api/mesh/phone", request)
+                // 423: the T5 waits for the code to be tapped on its own screen.
+                for (tries in 1..60) {
+                    if (code != 423) break
+                    Thread.sleep(2000)
+                    val again = Server.unit(ip, "/api/mesh/phone", request)
+                    code = again.first
+                    body = again.second
+                }
                 if (code != 200) return@run say("T5-en sa: $body")
+                say("Henter nøklene …")
                 val error = Mesh.pairFinish(JSONObject(body).getString("box"))
                 if (error.isNotEmpty()) return@run say(error)
                 say("Koblet! Henter meldinger fra serveren …")

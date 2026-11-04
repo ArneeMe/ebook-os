@@ -17,6 +17,7 @@ import tempfile
 import threading
 import time
 import unittest
+import unittest.mock
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -364,6 +365,22 @@ class EndToEnd(unittest.TestCase):
             wm.server_request(url, bytes(32), "GET", "/api/join/" + "00" * 8)
         self.assertIn("another certificate", str(e.exception))
 
+
+
+class Approval(unittest.TestCase):
+    def test_waits_until_the_code_is_tapped(self):
+        """The unit answers 423 until its code is tapped; the tool asks again."""
+        answers = [wm.WaitingForApproval("wait"), wm.WaitingForApproval("wait"), "{}"]
+
+        def fake(ip, path, data):
+            a = answers.pop(0)
+            if isinstance(a, Exception):
+                raise a
+            return a
+
+        with unittest.mock.patch.object(wm, "unit_post", fake), unittest.mock.patch.object(wm.time, "sleep"):
+            self.assertEqual(wm.unit_post_approved("10.0.0.1", "/api/mesh/join", {}), "{}")
+        self.assertEqual(answers, [])
 
 if __name__ == "__main__":
     unittest.main()

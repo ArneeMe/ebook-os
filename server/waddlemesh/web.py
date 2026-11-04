@@ -24,6 +24,8 @@ log = logging.getLogger("waddlemesh.web")
 MAX_BODY = 64 * 1024
 MAX_JOIN_BODY = 4096
 JOINS_PER_ADDRESS = 3  # join requests per address per hour
+# More than this from one member in an hour is noted as suspicious.
+UPLOADS_PER_HOUR = 2000
 MAX_JOIN_BOX = 1024  # bytes, sealed
 
 
@@ -64,6 +66,10 @@ class Handler(BaseHTTPRequestHandler):
             return ipaddress.ip_address(self.client_address[0]).is_private
         except ValueError:
             return False
+
+    def _wrong_token(self):
+        self.server.mesh.store.note_suspicious("feil token", None, "fra %s" % self.client_address[0])
+        time.sleep(1)  # slow down guessing
 
     def _json(self, code, doc):
         self._send(code, json.dumps(doc).encode(), "application/json")
@@ -108,7 +114,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(404, b"")
         member = self._member()
         if member is None:
-            time.sleep(1)  # slow down guessing
+            self._wrong_token()
             return self._send(401, b"")
         length = self._length(MAX_BODY)
         if length is None:
@@ -117,6 +123,9 @@ class Handler(BaseHTTPRequestHandler):
             packets = P.unframe(self.rfile.read(length))
         except P.BadPacket:
             return self._send(400, b"")
+        if self.server.count_upload(member, len(packets)):
+            self.server.mesh.store.note_suspicious(
+                "mye opplasting", member, "over %d pakker siste time (stjålet mobil?)" % UPLOADS_PER_HOUR)
         answers = []
         for raw in packets:
             try:
@@ -139,7 +148,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"box": box}) if box else self._send(404, b"")
         if self.path == "/api/roster":
             if self._member() is None:
-                time.sleep(1)
+                self._wrong_token()
                 return self._send(401, b"")
             stored = self.server.mesh.store.roster()
             return self._send(200, stored[1]) if stored else self._send(404, b"")
@@ -265,6 +274,23 @@ def _gateway_card(gw, now):
             '</div><p class="state small">%s</p><dl>%s</dl></section>\n' % (dot, state, _rows(rows)))
 
 
+def _suspicious_card(sus, now):
+    """Traffic that looked like an attack, the last 7 days (docs/waddle/SECURITY.md)."""
+    if not sus["count"]:
+        return '<section class="card"><p class="dim">Ingenting de siste 7 dagene.</p></section>\n'
+    rows = []
+    for n in sus["notes"]:
+        who = "" if n["member"] is None else " · %s" % (
+            ("mobil %d" % (n["member"] & 127)) if n["member"] & 128 else "nr. %d" % n["member"])
+        rows.append(("%s" % html.escape(ago(now - n["at"])),
+                     "<strong>%s</strong>%s<br><span class=\"dim small\">%s</span>" % (
+                         html.escape(n["kind"]), who, html.escape(n["detail"]))))
+    more = "" if sus["count"] <= len(sus["notes"]) else '<p class="dim small">… og %d til.</p>' % (
+        sus["count"] - len(sus["notes"]))
+    return ('<section class="card"><p class="small">%d ganger de siste 7 dagene. Ingenting er stoppet: '
+            'listen viser bare at det skjer.</p><dl>%s</dl>%s</section>\n' % (sus["count"], _rows(rows), more))
+
+
 def status_page(status, now=None):
     """Phone-sized, Norwegian, no scripts or outside files; reloads every 30 s."""
     now = int(now or time.time())
@@ -277,6 +303,7 @@ def status_page(status, now=None):
     if status.get("roster"):
         rows.insert(0, ("Medlemsliste", "versjon %d" % status["roster"]))
     server = _rows(rows)
+    suspicious = _suspicious_card(status.get("suspicious") or {"count": 0, "notes": []}, now)
     return """<!doctype html><html lang="no"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="refresh" content="30">
@@ -285,10 +312,11 @@ def status_page(status, now=None):
 %s<h2>Enheter</h2>
 %s<h2>Gateway og server</h2>
 %s<section class="card"><div class="top"><span class="name">Server</span></div><dl>%s</dl></section>
-<footer>Serveren lagrer bare krypterte pakker og kan ikke lese meldinger eller posisjoner.
+<h2>Mistenkelig</h2>
+%s<footer>Serveren lagrer bare krypterte pakker og kan ikke lese meldinger eller posisjoner.
 Siden oppdateres hvert 30. sekund.</footer>
 </main></body></html>""" % ("SOS · " if banners else "", STYLE, time.strftime("%H:%M", time.localtime(now)),
-                             banners, units, _gateway_card(status["gateway"], now), server)
+                             banners, units, _gateway_card(status["gateway"], now), server, suspicious)
 
 
 class WebServer(ThreadingHTTPServer):
@@ -299,6 +327,7 @@ class WebServer(ThreadingHTTPServer):
         self.mesh = mesh
         self.gateway_status = gateway_status
         self.join_times = {}  # address -> times of its join requests in the last hour
+        self.uploads = {}  # member -> [hour it started, packets uploaded in it]
         self.join_lock = threading.Lock()
         if cert:
             ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
@@ -306,6 +335,17 @@ class WebServer(ThreadingHTTPServer):
             ctx.load_cert_chain(cert, key)
             # Handshake in the request's own thread, so a slow unit blocks nobody.
             self.socket = ctx.wrap_socket(self.socket, server_side=True, do_handshake_on_connect=False)
+
+    def count_upload(self, member, count, now=None):
+        """True once a member has uploaded more than UPLOADS_PER_HOUR packets in
+        an hour: more than a unit sends (a stolen phone or token flooding)."""
+        now = now or time.time()
+        with self.join_lock:
+            start, total = self.uploads.get(member, (now, 0))
+            if now - start >= 3600:
+                start, total = now, 0
+            self.uploads[member] = (start, total + count)
+            return total <= UPLOADS_PER_HOUR < total + count
 
     def allow_join(self, address, now=None):
         """At most JOINS_PER_ADDRESS join requests per internet address per hour,

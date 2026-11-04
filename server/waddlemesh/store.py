@@ -59,12 +59,23 @@ CREATE TABLE IF NOT EXISTS joins (
     box TEXT NOT NULL,
     at INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS suspicious (
+    id INTEGER PRIMARY KEY,
+    at INTEGER NOT NULL,
+    kind TEXT NOT NULL,
+    member INTEGER,
+    detail TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS welcomes (
     invite TEXT PRIMARY KEY,
     box TEXT NOT NULL,
     at INTEGER NOT NULL
 );
 """
+# Suspicious traffic: kept a month; the same kind from the same sender at most
+# once per 10 minutes, so a flood is one line, not thousands.
+SUSPICIOUS_KEPT_S = 30 * 86400
+SUSPICIOUS_QUIET_S = 600
 # Join requests and welcomes are forgotten after a week.
 JOIN_KEPT_S = 7 * 86400
 MAX_JOINS = 20
@@ -344,6 +355,38 @@ class Store:
 
     def close(self):
         self.db.close()
+
+    def max_counter(self, ptype, sender):
+        """The highest counter stored from sender for that type, or None."""
+        with self.lock:
+            row = self.db.execute("SELECT MAX(counter) FROM packets WHERE type = ? AND sender = ?",
+                                  (ptype, sender)).fetchone()
+        return row[0]
+
+    def note_suspicious(self, kind, member, detail, now=None):
+        """Writes down traffic that looks like an attack (docs/waddle/SECURITY.md).
+        Nothing is blocked: this only shows whether it happens."""
+        now = int(now or time.time())
+        with self.lock:
+            recent = self.db.execute("SELECT 1 FROM suspicious WHERE kind = ? AND member IS ? AND at > ?",
+                                     (kind, member, now - SUSPICIOUS_QUIET_S)).fetchone()
+            if recent:
+                return False
+            self.db.execute("DELETE FROM suspicious WHERE at < ?", (now - SUSPICIOUS_KEPT_S,))
+            self.db.execute("INSERT INTO suspicious (at, kind, member, detail) VALUES (?, ?, ?, ?)",
+                            (now, kind, member, detail))
+            self.db.commit()
+        log.warning("suspicious: %s (%s) %s", kind, member, detail)
+        return True
+
+    def suspicious(self, days=7, limit=20, now=None):
+        """The newest notes of the last days: (how many, [{at, kind, member, detail}])."""
+        since = int(now or time.time()) - days * 86400
+        with self.lock:
+            count = self.db.execute("SELECT COUNT(*) FROM suspicious WHERE at >= ?", (since,)).fetchone()[0]
+            rows = self.db.execute("SELECT at, kind, member, detail FROM suspicious WHERE at >= ?"
+                                   " ORDER BY at DESC, id DESC LIMIT ?", (since, limit)).fetchall()
+        return count, [{"at": r[0], "kind": r[1], "member": r[2], "detail": r[3]} for r in rows]
 
     def backup(self, path):
         """A consistent copy of the database, safe while the server runs."""

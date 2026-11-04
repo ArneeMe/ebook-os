@@ -258,3 +258,9 @@ Script apps (docs/waddle/APPS.md):
 - [ ] `waddle book --hylle <checkout> <Gutenberg link>`, commit and push: Bokhylle
       lists the book, a tap fetches it to /Books (then "Har"), and it opens in
       the library.
+
+Setup code needs a tap on the T5 (security):
+- [ ] `waddle mesh setup` and phone pairing stop at "Trykk her hvis koden er lik"
+      on the T5's File Transfer screen, and go on by themselves after a tap (or OK).
+- [ ] The hotspot password on File Transfer is new after a restart, and the QR
+      code still joins it.

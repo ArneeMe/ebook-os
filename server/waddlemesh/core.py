@@ -16,6 +16,9 @@ LORA_SYNC_LIMIT = 12
 WIFI_SYNC_LIMIT = 200  # a unit that was away long asks again while answers are full
 # The status page shows an SOS packet this long.
 SOS_SHOWN_S = 300
+# A counter this far above the sender's newest is noted as suspicious: a real
+# unit counts one per packet (and skips a small range after a restart).
+COUNTER_JUMP = 1_000_000
 
 
 def no_hops(raw):
@@ -76,9 +79,13 @@ class Server:
             h = P.parse_header(raw)
         except P.BadPacket as e:
             log.debug("dropped packet: %s", e)
+            if via == "lora" and raw[:1] == bytes([P.MAGIC]):
+                self.store.note_suspicious("ødelagt pakke", None, "over LoRa: %s" % e)
             return []
         if h.network != self.network or h.sender == P.SERVER:
             return []
+        if via == "lora" and not handed_over:
+            self._watch(h)
         if handed_over:
             if h.type in (P.MSG, P.POS, P.SOS):
                 self.store.add_packet(h, raw, via)
@@ -133,6 +140,19 @@ class Server:
             limit = LORA_SYNC_LIMIT if via == "lora" else WIFI_SYNC_LIMIT
             return [no_hops(raw) for raw in self.store.messages_between(f.sender, f.after, f.before, h.sender, limit)]
         return []
+
+    def _watch(self, h):
+        """Notes what looks like someone sending as a member over the radio
+        (docs/waddle/SECURITY.md). The header is not signed, so this only shows
+        that it happens; it changes nothing."""
+        r = self.roster()
+        if r and P.person(h.sender) not in {m.number for m in r.members}:
+            self.store.note_suspicious("ukjent avsender", h.sender, "%s over LoRa" % P.TYPE_NAMES.get(h.type, h.type))
+        if h.type in (P.MSG, P.POS, P.SOS):
+            newest = self.store.max_counter(h.type, h.sender)
+            if newest is not None and h.counter > newest + COUNTER_JUMP:
+                self.store.note_suspicious("teller hopper", h.sender, "%s over LoRa: %d etter %d" % (
+                    P.TYPE_NAMES.get(h.type, h.type), h.counter, newest))
 
     def _relay(self, h, raw):
         """The gateway passes packets on like a unit does (protocol/PROTOCOL.md,
@@ -200,5 +220,7 @@ class Server:
             u["sos"] = bool(flags and flags & P.SYNC_SOS) or bool(u["sos_at"] and now - u["sos_at"] < SOS_SHOWN_S)
             units.append(u)
         counts = self.store.counts()
+        count, notes = self.store.suspicious()
         return {"units": units, "packets": {P.TYPE_NAMES[t]: n for t, n in sorted(counts.items())},
-                "roster": r.version if r else None, "uptime_s": int(time.time() - self.started)}
+                "roster": r.version if r else None, "uptime_s": int(time.time() - self.started),
+                "suspicious": {"count": count, "notes": notes}}

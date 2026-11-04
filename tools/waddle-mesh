@@ -411,7 +411,24 @@ def unit_post(ip, path, data):
         with urllib.request.urlopen(req, timeout=15) as r:
             return r.read().decode()
     except urllib.error.HTTPError as e:
-        raise RuntimeError(f"{ip} said: {e.read().decode(errors='replace')}") from e
+        error = WaitingForApproval if e.code == 423 else RuntimeError
+        raise error(f"{ip} said: {e.read().decode(errors='replace')}") from e
+
+
+class WaitingForApproval(RuntimeError):
+    """423 from the unit: the code is not yet tapped on its screen."""
+
+
+def unit_post_approved(ip, path, data, wait_s=120):
+    """unit_post, asked again every 2 s while the unit waits for its code to be tapped."""
+    deadline = time.time() + wait_s
+    while True:
+        try:
+            return unit_post(ip, path, data)
+        except WaitingForApproval:
+            if time.time() > deadline:
+                raise
+            time.sleep(2)
 
 
 def ssh(host, command):
@@ -502,7 +519,8 @@ def hand_over(ip, link, name):
         raise RuntimeError(f"the code does not match: something else answered at {ip}. Stopped")
     key = setup_key(tool_secret, tool_public, unit_public)
     sealed = aead_seal(key, setup_nonce(2), json.dumps({"invite": link, "name": name}).encode())
-    answer = json.loads(unit_post(ip, "/api/mesh/join", {"tool": tool_public.hex(), "box": sealed.hex()}))
+    say(f"  Tap the code on the unit's screen (or press OK there) to let it go on.")
+    answer = json.loads(unit_post_approved(ip, "/api/mesh/join", {"tool": tool_public.hex(), "box": sealed.hex()}))
     if bytes.fromhex(answer["from"]) != unit_public:
         raise RuntimeError(f"{ip} answered with another key than it showed. Stopped")
     return unit_public, bytes.fromhex(answer["box"]), answer.get("code", "")
@@ -991,6 +1009,20 @@ def check(args):
         ok, text = unit_health(m["ip"], logs="--logs" in args)
         bad += not ok
         say(f"  {G if ok else R}{'✓' if ok else '✗'}{N} {B}{m['name']}{N} {DIM}{m['ip']}{N}: {text}")
+    pi = load(MESH).get("pi")
+    if pi:
+        try:
+            sus = json.loads(ssh(pi, "curl -sk https://localhost:8443/api/status")).get("suspicious") or {}
+        except (RuntimeError, ValueError) as e:
+            say(f"  {Y}?{N} {B}Pi{N}: could not ask it ({e})")
+        else:
+            if not sus.get("count"):
+                say(f"  {G}✓{N} {B}Pi{N}: nothing suspicious the last 7 days")
+            else:
+                say(f"  {Y}!{N} {B}Pi{N}: {sus['count']} suspicious the last 7 days (status page: Mistenkelig)")
+                for n in sus.get("notes", [])[:5]:
+                    when = time.strftime("%d.%m %H:%M", time.localtime(n["at"]))
+                    say(f"      {DIM}{when}{N} {n['kind']}: {n['detail']}")
     say()
     return 1 if bad else 0
 
