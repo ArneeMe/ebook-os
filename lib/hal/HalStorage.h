@@ -36,7 +36,8 @@ class HalStorage {
   void endUsbDrive();
   UsbDriveState usbDriveState() const;
   bool usbDriveHostSuspended() const;
-  std::vector<String> listFiles(const char* path = "/", int maxFiles = 200);
+  std::vector<String> listFiles(const char* path = "/", int maxFiles = 200);  // files only, no folders
+  std::vector<String> listDirs(const char* path, int maxDirs = 200);          // folders only
   // Read the entire file at `path` into a String. Returns empty string on failure.
   String readFile(const char* path);
   // Low-memory helpers:
