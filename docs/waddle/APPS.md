@@ -9,8 +9,8 @@ runtime is in `src/apps/store/`.
 
 - `apps/index.json` in this repo lists the apps, and `apps/<id>/` holds each one.
 - On the device, **Apper → Hent flere apper** fetches the list (only then; nothing
-  is checked by itself). A tap installs or updates an app; holding one you have
-  removes it, with its data.
+  is checked by itself). A tap installs or updates an app; holding one you have,
+  here or in Apper, removes it with its data.
 - Installed apps live on the SD card in `/Apper/<id>/`. Their files are in
   `/Apper/<id>/data/`.
 
@@ -21,7 +21,7 @@ To publish an app: add its folder, add it to `apps/index.json` and merge into
 `index.json`:
 
 ```json
-{"apps": [{"id": "tegn", "name": "Tegn", "description": "…", "version": 1,
+{"apps": [{"id": "bokhylle", "name": "Bokhylle", "description": "…", "version": 1,
            "devices": ["x4pro", "t5"], "files": ["app.json", "main.lua"]}]}
 ```
 
@@ -71,7 +71,6 @@ when the app closes): `get(url)` (body, or nil and why), `download(url, name)`
 
 ## The apps
 
-- **Tegn** (`apps/tegn`): draw with a finger or a passive touch pen.
 - **Bokhylle** (`apps/bokhylle`): the books in `books/` (`index.tsv`: file,
   title, author, bytes, tab-separated), added with `waddle book --hylle
   <checkout>`. Only books without copyright: the repo is public.

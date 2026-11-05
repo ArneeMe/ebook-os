@@ -252,10 +252,8 @@ gateway's HELLO. Install the server:
 Script apps (docs/waddle/APPS.md):
 - [ ] Reader Hjem has a sixth button (Apper); the T5's Apper shows Bøker, Nyheter
       and "+ Hent flere apper".
-- [ ] Hent flere apper on Wi-Fi lists Tegn; a tap installs it, and it opens.
-- [ ] Tegn: lines follow the finger or a touch pen without long delay, Tykk,
-      Visk and Tøm (tap twice) work, and the drawing is there after a restart.
-- [ ] Holding Tegn in Hent apper removes it.
+- [ ] Hent flere apper on Wi-Fi lists Bokhylle; a tap installs it, and it opens.
+- [ ] Holding an app in Apper (or in Hent apper) removes it from the card.
 - [ ] Free heap in `waddle mesh check` (T5) is the same after opening and
       closing an app a few times.
 - [ ] `waddle book --hylle <checkout> <Gutenberg link>`, commit and push: Bokhylle

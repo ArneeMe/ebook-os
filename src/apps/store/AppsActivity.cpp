@@ -107,6 +107,25 @@ void AppsActivity::loop() {
     activityManager.goHome();
     return;
   }
+  // Hold a downloaded app to remove it from the card (also one no longer in the store).
+  int x = 0, y = 0;
+  if (mappedInput.wasScreenLongPress(x, y)) {
+    const int builtins = int(apps::builtins().size());
+    for (int r = builtins; r < builtins + int(scripts.size()); r++) {
+      if (rowY[size_t(r)] >= 0 && y >= rowY[size_t(r)] && y < rowY[size_t(r)] + rowH) {
+        apps::uninstall(scripts[size_t(r - builtins)].id);
+        auto left = apps::installed();
+        {
+          RenderLock lock(*this);
+          scripts = std::move(left);
+          focus = 0;
+        }
+        requestUpdate();
+        return;
+      }
+    }
+    return;
+  }
   const int row = listInput(mappedInput, rowY, rowH, count(), focus);
   if (row == -2) requestUpdate();
   if (row >= 0) open(row);
