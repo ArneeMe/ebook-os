@@ -22,12 +22,10 @@ void AppActivity::onEnter() {
   requestUpdate();
 }
 
+// ActivityManager calls this holding the render lock (not recursive): no lock here.
 void AppActivity::onExit() {
-  {
-    RenderLock lock(*this);
-    if (app) app->call("stop");
-    app.reset();
-  }
+  if (app) app->call("stop");
+  app.reset();
   Activity::onExit();
 }
 
@@ -93,8 +91,8 @@ void AppActivity::loop() {
   const auto swipe = mappedInput.wasSwipe();
   if (swipe == MappedInputManager::SwipeDir::Left) add("button", "next", 0, 0);
   if (swipe == MappedInputManager::SwipeDir::Right) add("button", "prev", 0, 0);
-  const bool tick = app->timerMs() && millis() >= nextTick;
-  if (tick) nextTick = millis() + app->timerMs();
+  const bool tick = app->timerMs() && millis() - lastTick >= app->timerMs();  // safe across the millis() wrap
+  if (tick) lastTick = millis();
   if (!count && !tick) return;
 
   {

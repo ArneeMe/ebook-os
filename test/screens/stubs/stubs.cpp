@@ -98,11 +98,26 @@ void ActivityManager::goToReader(std::string, bool) {}
 void ActivityManager::requestUpdate(bool) {}
 void ActivityManager::requestUpdateAndWait() {}
 
-RenderLock::RenderLock(Mode) : isLocked(true) {}
-RenderLock::RenderLock(Activity&) : isLocked(true) {}
-RenderLock::~RenderLock() = default;
-void RenderLock::unlock() { isLocked = false; }
-bool RenderLock::peek() { return false; }
+// Not recursive, as on the device: taking it twice on one task hangs the unit,
+// so here it stops the simulator with a message instead.
+namespace {
+bool renderLockHeld = false;
+}
+RenderLock::RenderLock(Mode) : isLocked(true) {
+  if (renderLockHeld) {
+    std::fprintf(stderr, "RenderLock taken twice on one task: this hangs the device\n");
+    std::abort();
+  }
+  renderLockHeld = true;
+}
+RenderLock::RenderLock(Activity&) : RenderLock(Mode::Blocking) {}
+RenderLock::~RenderLock() { unlock(); }
+void RenderLock::unlock() {
+  if (isLocked) renderLockHeld = false;
+  isLocked = false;
+}
+bool RenderLock::peek() { return renderLockHeld; }
+bool RenderLock::heldHere() { return renderLockHeld; }
 
 // Nothing is pressed; a tap only when screens.cpp asks for one.
 namespace {

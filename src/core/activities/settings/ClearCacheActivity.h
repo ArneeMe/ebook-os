@@ -13,7 +13,7 @@ class ClearCacheActivity final : public Activity {
   void onEnter() override;
   void onExit() override;
   void loop() override;
-  bool skipLoopDelay() override { return true; }  // Prevent power-saving mode
+  bool skipLoopDelay() override { return state == CLEARING; }  // full speed only while it clears
   void render(RenderLock&&) override;
 
  private:

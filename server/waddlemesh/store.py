@@ -345,12 +345,14 @@ class Store:
             self.db.commit()
 
     def take_welcome(self, invite, now=None):
-        """The sealed welcome for an invitation, once (then forgotten), or None."""
+        """The sealed welcome for an invitation, or None. Kept until it expires
+        with the other join data (a week): if the newcomer's unit was away when
+        the tool fetched it, running `waddle mesh join` again gets it once more.
+        Only the newcomer's unit can open it."""
         with self.lock:
             self._forget_old_joins(int(now or time.time()))
+            self.db.commit()  # the forgetting writes: end its transaction, or the CLI waits for it
             row = self.db.execute("SELECT box FROM welcomes WHERE invite = ?", (invite,)).fetchone()
-            self.db.execute("DELETE FROM welcomes WHERE invite = ?", (invite,))
-            self.db.commit()
         return row[0] if row else None
 
     def close(self):

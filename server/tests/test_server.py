@@ -817,7 +817,7 @@ class JoinWebTests(unittest.TestCase):
         self.assertEqual(self.mesh.store.joins()[0]["box"], "bb" * 40)
         self.mesh.store.add_welcome("01" * 8, "cc" * 50)
         self.assertEqual(self.request("/api/join/" + "01" * 8), (200, json.dumps({"box": "cc" * 50}).encode()))
-        self.assertEqual(self.request("/api/join/" + "01" * 8)[0], 404)  # given once
+        self.assertEqual(self.request("/api/join/" + "01" * 8)[0], 200)  # kept until it expires: join can be run again
         self.assertEqual(self.request("/api/join/nothex")[0], 404)
 
     def test_bad_requests(self):

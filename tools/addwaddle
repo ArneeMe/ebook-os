@@ -19,6 +19,19 @@ fi
 step() { printf '%s▸%s %s\n' "$C" "$N" "$*"; }
 ok()   { printf '  %s✓%s %s\n' "$G" "$N" "$*"; }
 fail() { printf '  %s✗%s %s\n' "$R" "$N" "$*"; }
+# "/Mine bøker" -> "%2FMine%20b%C3%B8ker", for the query string.
+urlencode() {
+  local LC_ALL=C s=$1 out= c i
+  for ((i = 0; i < ${#s}; i++)); do
+    c=${s:i:1}
+    case $c in
+      [a-zA-Z0-9.~_-]) out+=$c ;;
+      *) out+=$(printf '%%%02X' "'$c") ;;
+    esac
+  done
+  printf '%s' "$out"
+}
+
 human() { numfmt --to=iec --suffix=B "$1" 2>/dev/null || echo "$(( $1 / 1024 ))KB"; }
 
 # macOS and Linux spell these differently.
@@ -98,8 +111,9 @@ for f in "${files[@]}"; do
   # The reader refuses to overwrite files, so remove an older copy first.
   curl -s -o /dev/null --max-time 10 -X POST --data-urlencode "path=${DEST%/}/$name" "http://$IP/delete"
   body=$(mktemp)
+  # Quoted, so a name with ';' or ',' is not read as curl options.
   result=$(curl -# -o "$body" -w '%{http_code} %{speed_upload} %{time_total}' \
-    --connect-timeout 5 -F "file=@$f" "http://$IP/upload?path=$DEST")
+    --connect-timeout 5 -F "file=@\"$f\"" "http://$IP/upload?path=$(urlencode "$DEST")")
   read -r code speed secs <<<"$result"
   if [ "$code" = "200" ]; then
     ok "Uploaded in ${secs%.*}s $DIM($(human "${speed%.*}")/s)$N"

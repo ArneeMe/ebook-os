@@ -1013,7 +1013,7 @@ def check(args):
     if pi:
         try:
             sus = json.loads(ssh(pi, "curl -sk https://localhost:8443/api/status")).get("suspicious") or {}
-        except (RuntimeError, ValueError) as e:
+        except (RuntimeError, ValueError, OSError) as e:  # OSError: no ssh here (Termux)
             say(f"  {Y}?{N} {B}Pi{N}: could not ask it ({e})")
         else:
             if not sus.get("count"):

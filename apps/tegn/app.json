@@ -1,6 +1,9 @@
 {
   "name": "Tegn",
   "description": "Tegn med fingeren eller en touchpenn",
-  "version": 1,
-  "devices": ["x4pro", "t5"]
+  "version": 2,
+  "devices": [
+    "x4pro",
+    "t5"
+  ]
 }

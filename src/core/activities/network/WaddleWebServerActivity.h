@@ -59,6 +59,7 @@ class WaddleWebServerActivity final : public Activity {
   int lastWifiBars = 0;
   std::string shownNote;  // product::transferNote() as last drawn
   mutable int noteY = 0;  // where it is drawn; taps below it approve it
+  void checkApproval();
 
   void renderServerRunning() const;
   void renderWifiIndicator(int subHeaderTop) const;

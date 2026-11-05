@@ -561,7 +561,10 @@ void setup() {
 
   // The data folder had another name before (settings, Wi-Fi, progress,
   // caches): move it once, so a card from an older build keeps everything.
-  if (!Storage.exists(DATA_DIR) && Storage.exists(OLD_DATA_DIR)) Storage.rename(OLD_DATA_DIR, DATA_DIR);
+  if (!Storage.exists(DATA_DIR) && Storage.exists(OLD_DATA_DIR)) {
+    const bool moved = Storage.rename(OLD_DATA_DIR, DATA_DIR);
+    LOG_INF("MAIN", "Moved the data folder to %s: %s", DATA_DIR, moved ? "ok" : "FAILED");
+  }
 
   APP_STATE.loadFromFile();
   const bool isSleepWake = wakeupReason == HalGPIO::WakeupReason::PowerButton;

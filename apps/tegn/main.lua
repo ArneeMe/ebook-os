@@ -30,7 +30,8 @@ local function load()
   for line in text:gmatch("[^\n]+") do
     local nums = {}
     for n in line:gmatch("%-?%d+") do nums[#nums + 1] = tonumber(n) end
-    if #nums >= 4 then
+    -- A damaged line (an odd number of coordinates) is skipped, not drawn.
+    if #nums >= 4 and #nums % 2 == 0 then
       local s = {size = nums[1], white = nums[2] == 1, points = {}}
       for i = 3, #nums do s.points[#s.points + 1] = nums[i] end
       strokes[#strokes + 1] = s

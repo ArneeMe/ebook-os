@@ -509,6 +509,9 @@ void show(Activity& screen, const std::string& name, const std::function<void(Ac
     screen.render(RenderLock());
   }
   writePng(name);
+  // Leaving the screen as ActivityManager does: onExit under the render lock.
+  RenderLock lock;
+  screen.onExit();
 }
 
 }  // namespace

@@ -125,10 +125,11 @@ void addPlay(JsonObject o, const mesh::ChatMessage& m, const std::vector<mesh::p
     }
   } else if (p.kind == mesh::play::Kind::Game) {
     mesh::play::GameState s;
-    mesh::play::replay(ref, plays, s);
+    const bool found = mesh::play::replay(ref, plays, s);
+    s.game = p.game;  // from the card itself, also when its challenge is no longer loaded
     JsonObject game = o["game"].to<JsonObject>();
-    game["status"] = mesh::play::status(s, me, nameOrDu);
-    game["canMove"] = mesh::play::canMove(s, me);
+    game["status"] = found ? mesh::play::status(s, me, nameOrDu) : "Et gammelt parti: trekkene er ikke lastet";
+    game["canMove"] = found && mesh::play::canMove(s, me);
     game["over"] = s.winner() != 0;
     game["mine"] = s.playerOf(me) != 0;
     std::string board;

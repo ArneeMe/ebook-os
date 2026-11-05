@@ -12,8 +12,11 @@
 // match, so the stores' temp/backup siblings are covered too.
 namespace protectedpaths {
 
+// The old data folder too, in case it is left on the card (a rollback to an
+// older build makes it again; WaddleMain.cpp moves it only once).
 inline constexpr const char* SENSITIVE_FILES[] = {"/.waddleos/wifi.json", "/.waddleos/opds.json",
-                                                  "/.waddleos/koreader.json"};
+                                                  "/.waddleos/koreader.json", "/.crosspoint/wifi.json",
+                                                  "/.crosspoint/opds.json", "/.crosspoint/koreader.json"};
 
 // SdFat also opens a name by its generated 8.3 alias (".waddleos" is
 // WADDLE~1), which no spelling check can map back to the long name.

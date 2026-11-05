@@ -538,6 +538,7 @@ bool canMove(const GameState& s, const uint8_t who) {
 
 std::string status(const GameState& s, const uint8_t me, const std::function<std::string(uint8_t)>& nameOf) {
   const int winner = s.winner();
+  if (s.gaveUp && !s.opponent) return "Utfordringen ble trukket";
   if (winner == 3) return s.game == Game::Chess ? "Patt: uavgjort" : "Uavgjort";
   if (winner) {
     const uint8_t who = winner == 1 ? s.opponent : s.challenger;

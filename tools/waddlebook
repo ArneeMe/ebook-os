@@ -32,7 +32,7 @@ non-book files, and rejects zip bombs and unsafe paths.
 
 Standard library only. Works on Linux and macOS.
 """
-import argparse, html, http.client, io, json, os, posixpath, re, sys, time, urllib.parse, urllib.request, uuid, zipfile
+import argparse, html, http.client, io, json, os, posixpath, re, sys, time, urllib.parse, urllib.request, uuid, zipfile, zlib
 import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
 
@@ -587,13 +587,14 @@ def shelf_name(title, creator, hint):
     base = nice_name(title, creator, hint)[:-5]
     for a, b in (("æ", "ae"), ("ø", "o"), ("å", "aa"), ("Æ", "Ae"), ("Ø", "O"), ("Å", "Aa")):
         base = base.replace(a, b)
-    base = re.sub(r"[^A-Za-z0-9]+", "-", base).strip("-")[:60] or "book"
+    # At most 64 characters with ".epub": the Bokhylle app's limit (LuaApp.cpp, plainName).
+    base = re.sub(r"[^A-Za-z0-9]+", "-", base).strip("-")[:59].strip("-") or "book"
     return base + ".epub"
 
 
 def add_to_shelf(repo, paths):
     books = os.path.join(repo, "books")
-    if not os.path.isdir(os.path.join(repo, ".git")):
+    if not os.path.exists(os.path.join(repo, ".git")):  # a folder, or a file in a worktree
         raise Rejected(f"{repo} is not a waddleos checkout")
     os.makedirs(books, exist_ok=True)
     rows = {}
@@ -610,6 +611,8 @@ def add_to_shelf(repo, paths):
         z = zipfile.ZipFile(io.BytesIO(data))
         title, creator = book_meta(z.read(read_container(z)))
         name = shelf_name(title, creator, path)
+        if name in rows and rows[name][1] != (title or "").strip():
+            say(f"  {Y}!{N}  books/{name} was another book ({rows[name][1]}); it is replaced")
         save(data, books, name)
         clean = lambda t: re.sub(r"[\t\r\n]+", " ", t or "").strip()
         rows[name] = [name, clean(title) or name[:-5], clean(creator), str(len(data))]
@@ -723,7 +726,10 @@ def process(src, folder):
             say("  already in the books folder")
             return path
     say("  checking and cleaning...")
-    clean, notes, (title, creator) = clean_epub(data)
+    try:
+        clean, notes, (title, creator) = clean_epub(data)
+    except (zipfile.BadZipFile, zlib.error, EOFError, KeyError) as e:
+        raise Rejected(f"the book's zip is damaged ({e})")
     for n in notes:
         say(f"  - {n}")
     if not notes:
