@@ -56,35 +56,59 @@ void AppActivity::loop() {
       {Button::Up, "up"},     {Button::Down, "down"},         {Button::Left, "left"},        {Button::Right, "right"},
       {Button::Confirm, "ok"}, {Button::PageForward, "next"}, {Button::PageBack, "prev"},
   };
-  RenderLock lock(*this);
+  // What happened since the last pass, read before taking the lock: the lock
+  // is taken only when there is something for the app, so drawing (render)
+  // always gets its turn.
+  struct Event {
+    const char* function;  // press, move, release, tap, or button with a name
+    const char* name;
+    int x, y;
+  };
+  Event events[12];
+  int count = 0;
+  auto add = [&](const char* function, const char* name, const int x, const int y) {
+    if (count < 12) events[count++] = {function, name, x, y};
+  };
   for (const auto& [button, name] : BUTTONS) {
-    if (mappedInput.wasReleased(button)) app->callButton(name);
+    if (mappedInput.wasReleased(button)) add("button", name, 0, 0);
   }
   int x = 0, y = 0;
   if (mappedInput.wasScreenTouchPressed(x, y)) {
     touching = true;
     lastX = x;
     lastY = y;
-    app->call("press", x, y);
-  } else if (touching && mappedInput.isScreenTouchHeld(x, y) && (x != lastX || y != lastY)) {
-    lastX = x;
-    lastY = y;
-    app->call("move", x, y);
-  }
-  if (touching && mappedInput.wasScreenTouchReleased()) {
+    add("press", nullptr, x, y);
+  } else if (touching && mappedInput.isScreenTouchHeld(x, y)) {
+    if (x != lastX || y != lastY) {
+      lastX = x;
+      lastY = y;
+      add("move", nullptr, x, y);
+    }
+  } else if (touching) {
+    // Released, also when the release edge itself was missed.
     touching = false;
-    app->call("release", lastX, lastY);
+    add("release", nullptr, lastX, lastY);
   }
-  if (mappedInput.wasScreenTapped(x, y)) app->call("tap", x, y);
+  if (mappedInput.wasScreenTapped(x, y)) add("tap", nullptr, x, y);
   const auto swipe = mappedInput.wasSwipe();
-  if (swipe == MappedInputManager::SwipeDir::Left) app->callButton("next");
-  if (swipe == MappedInputManager::SwipeDir::Right) app->callButton("prev");
+  if (swipe == MappedInputManager::SwipeDir::Left) add("button", "next", 0, 0);
+  if (swipe == MappedInputManager::SwipeDir::Right) add("button", "prev", 0, 0);
+  const bool tick = app->timerMs() && millis() >= nextTick;
+  if (tick) nextTick = millis() + app->timerMs();
+  if (!count && !tick) return;
 
-  if (app->running() && app->timerMs() && millis() >= nextTick) {
-    nextTick = millis() + app->timerMs();
-    app->call("tick");
+  {
+    RenderLock lock(*this);
+    for (int i = 0; i < count && app->running(); i++) {
+      const Event& e = events[i];
+      if (e.name) {
+        app->callButton(e.name);
+      } else {
+        app->call(e.function, e.x, e.y);
+      }
+    }
+    if (tick && app->running()) app->call("tick");
   }
-  lock.unlock();
   afterCall();
 }
 

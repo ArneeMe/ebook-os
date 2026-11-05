@@ -14,7 +14,6 @@ class AppActivity final : public Activity {
   void onExit() override;
   void loop() override;
   void render(RenderLock&&) override;
-  bool skipLoopDelay() override { return touching; }
   bool preventAutoSleep() override { return touching; }
 
  private:
