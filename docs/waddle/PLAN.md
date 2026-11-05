@@ -107,12 +107,13 @@ connection has a public IP (no CGNAT).
 
 Done: apps in Lua that come from `apps/` in this repo and run on both devices
 (docs/waddle/APPS.md), under Apper (a sixth button on the reader's Hjem, the
-Apper page on the T5). The first is Tegn: draw with a finger or a passive touch
-pen (both screens are capacitive: no pressure, finger precision). Bokhylle
-lists `books/` in this repo (books without copyright, added with `waddle book
+Apper page on the T5). Bokhylle lists `books/` in this repo (books without copyright, added with `waddle book
 --hylle <checkout>`) and fetches one to /Books with a tap.
 
 ## Decided against
+
+- Tegn (drawing app): froze the reader and drew poorly on these capacitive
+  screens; removed.
 
 - Audio on the reader (no audio hardware, BLE only, no A2DP).
 - Estimated battery use per part (only the total is measurable).

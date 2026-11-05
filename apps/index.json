@@ -1,20 +1,6 @@
 {
   "apps": [
     {
-      "id": "tegn",
-      "name": "Tegn",
-      "description": "Tegn med fingeren eller en touchpenn",
-      "version": 2,
-      "devices": [
-        "x4pro",
-        "t5"
-      ],
-      "files": [
-        "app.json",
-        "main.lua"
-      ]
-    },
-    {
       "id": "bokhylle",
       "name": "Bokhylle",
       "description": "Bøker uten opphavsrett fra waddleos-repoet",
