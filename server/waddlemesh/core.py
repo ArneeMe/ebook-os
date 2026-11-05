@@ -150,7 +150,10 @@ class Server:
             self.store.note_suspicious("ukjent avsender", h.sender, "%s over LoRa" % P.TYPE_NAMES.get(h.type, h.type))
         if h.type in (P.MSG, P.POS, P.SOS):
             newest = self.store.max_counter(h.type, h.sender)
-            if newest is not None and h.counter > newest + COUNTER_JUMP:
+            # A unit given a former member's number starts at the time it joined
+            # (counterFloor, unix seconds): a jump up to about now is that, not an attack.
+            fresh_start = 1_600_000_000 <= h.counter <= time.time() + 86400
+            if newest is not None and h.counter > newest + COUNTER_JUMP and not fresh_start:
                 self.store.note_suspicious("teller hopper", h.sender, "%s over LoRa: %d etter %d" % (
                     P.TYPE_NAMES.get(h.type, h.type), h.counter, newest))
 

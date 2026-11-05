@@ -64,6 +64,25 @@ void watchdog(lua_State* L, lua_Debug*) {
 }
 
 LuaApp& app() { return *current; }
+
+// Whole files, bytes as they are. (Storage.readFile stops at 50 KB and
+// Storage.writeFile at the first zero byte.)
+bool readAll(const std::string& path, std::string& out, const size_t cap) {
+  out.clear();
+  HalFile f = Storage.open(path.c_str());
+  if (!f) return false;
+  char buf[512];
+  for (int n; (n = f.read(buf, sizeof(buf))) > 0;) {
+    if (out.size() + size_t(n) > cap) return false;
+    out.append(buf, size_t(n));
+  }
+  return true;
+}
+
+bool writeAll(const std::string& path, const char* data, const size_t len) {
+  HalFile f = Storage.open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC);
+  return f && f.write(reinterpret_cast<const uint8_t*>(data), len) == len;
+}
 GfxRenderer& gfx() { return current->renderer; }
 
 int fontOf(const char* size) {
@@ -260,8 +279,12 @@ int storageRead(lua_State* L) {
     lua_pushnil(L);
     return 1;
   }
-  const String text = Storage.readFile(path.c_str());
-  lua_pushlstring(L, text.c_str(), text.length());
+  std::string text;
+  if (!readAll(path, text, MAX_FILE)) {
+    lua_pushnil(L);
+    return 1;
+  }
+  lua_pushlstring(L, text.data(), text.size());
   return 1;
 }
 int storageWrite(lua_State* L) {
@@ -271,7 +294,7 @@ int storageWrite(lua_State* L) {
   const std::string path = dataPath(L, 1);
   const std::string dir = std::string(DIR) + "/" + app().manifest.id + "/data";
   Storage.mkdir(dir.c_str());
-  lua_pushboolean(L, Storage.writeFile(path.c_str(), String(text)));
+  lua_pushboolean(L, writeAll(path, text, len));
   return 1;
 }
 int storageRemove(lua_State* L) {
@@ -295,7 +318,9 @@ int netGet(lua_State* L) {
   if (!app().manifest.net) return luaL_error(L, "appen har ikke lov til å bruke nett");
   const char* url = luaL_checkstring(L, 1);
   std::string body, err;
-  if (!net::get(url, body, MAX_FILE, err)) {
+  const bool fetched = net::get(url, body, MAX_FILE, err);
+  app().callStartedMs_ = millis();  // waiting for the web is not the script hanging
+  if (!fetched) {
     lua_pushnil(L);
     lua_pushstring(L, err.c_str());
     return 2;
@@ -311,6 +336,7 @@ int netDownload(lua_State* L) {
   Storage.mkdir(dir.c_str());
   std::string err;
   const bool ok = net::download(url, path, err);
+  app().callStartedMs_ = millis();
   lua_pushboolean(L, ok);
   if (ok) return 1;
   lua_pushstring(L, err.c_str());
@@ -328,6 +354,7 @@ int booksDownload(lua_State* L) {
   Storage.mkdir("/Books");
   std::string err;
   const bool ok = net::download(url, std::string("/Books/") + name, err);
+  app().callStartedMs_ = millis();
   lua_pushboolean(L, ok);
   if (ok) return 1;
   lua_pushstring(L, err.c_str());
@@ -405,8 +432,8 @@ bool LuaApp::start(const Manifest& m) {
     error_ = "main.lua mangler";
     return false;
   }
-  const String script = Storage.readFile(path.c_str());
-  if (script.length() == 0 || script.length() > MAX_SCRIPT) {
+  std::string script;
+  if (!readAll(path, script, MAX_SCRIPT) || script.empty()) {
     error_ = "main.lua er tom eller for stor";
     return false;
   }
@@ -453,7 +480,7 @@ bool LuaApp::start(const Manifest& m) {
 
   callStartedMs_ = millis();
   const std::string chunk = "@" + m.id + "/main.lua";
-  if (!finish(luaL_loadbufferx(L_, script.c_str(), script.length(), chunk.c_str(), "t"))) return false;
+  if (!finish(luaL_loadbufferx(L_, script.data(), script.size(), chunk.c_str(), "t"))) return false;
   if (!finish(lua_pcall(L_, 0, 0, 0))) return false;
   redraw_ = true;
   redrawMode_ = REFRESH_HALF;

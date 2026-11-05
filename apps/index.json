@@ -4,7 +4,7 @@
       "id": "tegn",
       "name": "Tegn",
       "description": "Tegn med fingeren eller en touchpenn",
-      "version": 1,
+      "version": 2,
       "devices": [
         "x4pro",
         "t5"
@@ -18,7 +18,7 @@
       "id": "bokhylle",
       "name": "Bokhylle",
       "description": "Bøker uten opphavsrett fra waddleos-repoet",
-      "version": 1,
+      "version": 2,
       "devices": [
         "x4pro",
         "t5"

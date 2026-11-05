@@ -29,6 +29,8 @@ bool RecentBooksStore::fromJson(JsonVariantConst doc) {
     book.title = obj["title"] | "";
     book.author = obj["author"] | "";
     book.coverBmpPath = obj["coverBmpPath"] | "";
+    // Saved before the data folder moved (WaddleMain.cpp): the cover is in the new one now.
+    if (book.coverBmpPath.rfind("/.crosspoint/", 0) == 0) book.coverBmpPath.replace(0, 12, "/.waddleos");
     recentBooks.push_back(book);
   }
 

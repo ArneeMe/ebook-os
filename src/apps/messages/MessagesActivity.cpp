@@ -308,7 +308,7 @@ void ChatActivity::loop() {
     return;
   }
   if (mappedInput.wasReleased(Button::Up) || mappedInput.wasReleased(Button::PageBack)) {
-    if (scroll + 1 < static_cast<int>(messages.size())) scroll += 3;
+    scroll = std::min(scroll + 3, std::max(0, static_cast<int>(messages.size()) - 1));
     requestUpdate();
   } else if (mappedInput.wasReleased(Button::Down) || mappedInput.wasReleased(Button::PageForward)) {
     scroll = std::max(0, scroll - 3);
@@ -354,7 +354,8 @@ void ChatActivity::loop() {
       return;
     }
     // Upper half: older messages; lower half: newer.
-    scroll = y < renderer.getScreenHeight() / 2 ? scroll + 3 : std::max(0, scroll - 3);
+    scroll = y < renderer.getScreenHeight() / 2 ? std::min(scroll + 3, std::max(0, static_cast<int>(messages.size()) - 1))
+                                                : std::max(0, scroll - 3);
     requestUpdate();
   }
   if (node().changes() != shownChanges) {

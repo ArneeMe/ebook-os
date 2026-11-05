@@ -16,4 +16,7 @@ class RenderLock {
   bool ownsLock() const { return isLocked; }
   void unlock();
   static bool peek();
+  // Whether this task holds it. The lock is not recursive: taking it again on
+  // the same task waits for ever.
+  static bool heldHere();
 };

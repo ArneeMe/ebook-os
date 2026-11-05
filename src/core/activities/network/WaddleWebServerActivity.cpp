@@ -351,13 +351,17 @@ void WaddleWebServerActivity::loop() {
             repaint = true;
           }
         }
-        // The setup code appears when a tool starts setup (product::transferNote()).
-        const std::string note = product::transferNote();
-        if (note != shownNote) {
-          shownNote = note;
-          repaint = true;
-        }
         if (repaint) requestUpdate();
+      }
+    }
+
+    // The setup code appears when a tool starts setup (product::transferNote()),
+    // on the hotspot too.
+    if (webServer && webServer->isRunning()) {
+      const std::string note = product::transferNote();
+      if (note != shownNote) {
+        shownNote = note;
+        requestUpdate();
       }
     }
 
@@ -397,6 +401,8 @@ void WaddleWebServerActivity::loop() {
             onGoHome();
             return;
           }
+          // Each update forgets the last one's taps: look for the approval here.
+          checkApproval();
         }
       }
       lastHandleClientTime = millis();
@@ -415,12 +421,16 @@ void WaddleWebServerActivity::loop() {
       onGoHome();
       return;
     }
-    // The setup code matched: tapping it (or OK) lets the tool or phone go on.
-    int tapX = 0, tapY = 0;
-    if (!shownNote.empty() && (mappedInput.wasReleased(MappedInputManager::Button::Confirm) ||
-                               (mappedInput.wasScreenTapped(tapX, tapY) && tapY >= noteY - 20))) {
-      product::approveTransferNote();
-    }
+    checkApproval();
+  }
+}
+
+// The setup code matched: tapping it (or OK) lets the tool or phone go on.
+void WaddleWebServerActivity::checkApproval() {
+  int tapX = 0, tapY = 0;
+  if (!shownNote.empty() && (mappedInput.wasReleased(MappedInputManager::Button::Confirm) ||
+                             (mappedInput.wasScreenTapped(tapX, tapY) && tapY >= noteY - 20))) {
+    product::approveTransferNote();
   }
 }
 

@@ -328,9 +328,9 @@ class EndToEnd(unittest.TestCase):
         self.assertEqual(status, 404)
         self.assertNotIn("Ola", json.dumps(admin["invites"]))
         self.assertIn("Ola Nordmann", self.tool("members"))
-        # The invitation is used up: a second try is turned down by the admin's tool.
-        self.assertEqual(self.mesh.store.add_join(wm.read_link(link)["invite"].hex(), "aa" * 32, "bb"), "ok")
-        self.assertIn("forgotten", self.tool("approve"))
+        # The invitation is used up: the server keeps its welcome (so `join` can
+        # be run again) and turns a second request away.
+        self.assertEqual(self.mesh.store.add_join(wm.read_link(link)["invite"].hex(), "aa" * 32, "bb"), "taken")
         self.assertEqual(self.mesh.store.joins(), [])
 
         # Kari's unit is lost.

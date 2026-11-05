@@ -12,8 +12,11 @@ namespace waddle::wifi {
 bool joinSaved(Activity&) { return joinSaved(); }
 
 bool joinSaved() {
-  // The store is only loaded by the Wi-Fi screens, so load it here too.
-  {
+  // The store is only loaded by the Wi-Fi screens, so load it here too. A
+  // script app asks from inside the render lock: taking it again would hang.
+  if (RenderLock::heldHere()) {
+    WIFI_STORE.loadFromFile();
+  } else {
     RenderLock lock;
     WIFI_STORE.loadFromFile();
   }
@@ -41,9 +44,16 @@ bool joinSaved() {
 }
 
 bool joinFailed(const unsigned long startedAtMs) {
-  if (millis() - startedAtMs < 1000) return false;
+  // The driver tries once more after the first "not found", so a failure
+  // counts only when it has lasted 5 s.
+  static unsigned long failingSince = 0;
   const auto status = WiFi.status();
-  return status == WL_NO_SSID_AVAIL || status == WL_CONNECT_FAILED;
+  if (millis() - startedAtMs < 1000 || (status != WL_NO_SSID_AVAIL && status != WL_CONNECT_FAILED)) {
+    failingSince = 0;
+    return false;
+  }
+  if (!failingSince) failingSince = millis();
+  return millis() - failingSince >= 5000;
 }
 
 void off() {

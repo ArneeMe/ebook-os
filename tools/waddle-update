@@ -273,3 +273,5 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print()
         sys.exit(130)
+    except (OSError, http.client.HTTPException, ValueError) as e:  # the network or the reader went away
+        die(f"Stopped: {e}", "Check that the reader is on File Transfer and on the same Wi-Fi, and try again.")

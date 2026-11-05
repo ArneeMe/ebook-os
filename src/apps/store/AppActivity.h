@@ -21,7 +21,7 @@ class AppActivity final : public Activity {
   std::unique_ptr<apps::LuaApp> app;
   bool touching = false;
   int lastX = -1, lastY = -1;
-  unsigned long nextTick = 0;
+  unsigned long lastTick = 0;
   int pendingMode = 0;
   int renders = 0;
 

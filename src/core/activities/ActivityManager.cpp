@@ -519,4 +519,8 @@ void RenderLock::unlock() {
  * @return true if renderingMutex is busy, otherwise false.
  *
  */
+bool RenderLock::heldHere() {
+  return xSemaphoreGetMutexHolder(activityManager.renderingMutex) == xTaskGetCurrentTaskHandle();
+}
+
 bool RenderLock::peek() { return xQueuePeek(activityManager.renderingMutex, NULL, 0) != pdTRUE; };

@@ -70,11 +70,12 @@ class HalStorage {
     std::filesystem::rename(full(tmpPath), full(path), ec);
     return !ec;
   }
+  // At most 50 000 bytes, as on the device (SDCardManager::readFile).
   String readFile(const char* path) {
     std::ifstream f(full(path), std::ios::binary);
     std::stringstream ss;
     ss << f.rdbuf();
-    return String(ss.str());
+    return String(ss.str().substr(0, 50000));
   }
   bool writeFile(const char* path, const String& content) {
     std::ofstream f(full(path), std::ios::binary | std::ios::trunc);

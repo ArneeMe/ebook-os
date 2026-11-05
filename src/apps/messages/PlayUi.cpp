@@ -240,11 +240,19 @@ void drawCard(const GfxRenderer& renderer, const mesh::ChatMessage& m, const std
   }
   if (p.kind == Kind::Game) {
     GameState s;
-    mesh::play::replay(ref, plays, s);
+    const bool found = mesh::play::replay(ref, plays, s);
     const int h = gameHeight();
-    const bool chess = s.game == mesh::play::Game::Chess;
+    // The type from the card's own message: replay fails when the challenge is
+    // older than the plays loaded (400 at most).
+    const bool chess = p.game == mesh::play::Game::Chess;
     renderer.drawRoundedRect(x, y, width, h, 2, 16, true);
-    const bool ships = s.game == mesh::play::Game::Ships;
+    const bool ships = p.game == mesh::play::Game::Ships;
+    if (!found) {
+      renderer.drawText(UI_12_FONT_ID, x + PAD, y + PAD, chess ? "Sjakk" : ships ? "Senk skipet" : "Fire på rad", true,
+                        EpdFontFamily::BOLD);
+      renderer.drawText(UI_10_FONT_ID, x + PAD, y + PAD + lineH + 8, "Et gammelt parti: trekkene er ikke lastet");
+      return;
+    }
     if (chess) {
       drawChess(renderer, s.chess, x + PAD + 4, y + PAD + 4, mesh::play::FourInRow::ROWS * MINI / 8,
                 s.playerOf(me()) == 2);

@@ -12,6 +12,7 @@ local problem = ""
 local status = ""      -- the line under the header: "Henter …", "Lagt i Bøker"
 local fetching = nil   -- the book to download at the next tick
 local page = 1
+local focus = 1        -- the chosen book, for the buttons (up/down, ok)
 local perPage = 1
 local rows = {}        -- {y=, book=} on this page
 local top = 0
@@ -89,6 +90,7 @@ function draw()
     local b = shelf[i]
     local y = y0 + (#rows) * ROW_H
     rows[#rows + 1] = {y = y, book = b}
+    if i == focus then screen.rect(0, y, 6, ROW_H - 4, {fill = true}) end
     local have = books.has(b.file)
     local right = have and "Har" or "Hent"
     local rw = screen.textWidth(right, {bold = true})
@@ -110,15 +112,28 @@ local function turn(step)
   local next = math.max(1, math.min(pages(), page + step))
   if next ~= page then
     page = next
+    focus = (page - 1) * perPage + 1
     app.redraw("fast")
   end
 end
 
+local function fetch(book)
+  if fetching or books.has(book.file) then return end
+  fetching = book
+  status = "Henter " .. book.title .. " ..."
+  app.redraw("fast")
+  app.every(100)
+end
+
+local function retry()
+  state = "load"
+  app.every(100)
+  app.redraw("fast")
+end
+
 function tap(x, y)
   if state == "failed" then
-    state = "load"
-    app.every(100)
-    app.redraw("fast")
+    retry()
     return
   end
   if state ~= "list" or fetching then return end
@@ -128,17 +143,28 @@ function tap(x, y)
   end
   for _, r in ipairs(rows) do
     if y >= r.y and y < r.y + ROW_H then
-      if books.has(r.book.file) then return end
-      fetching = r.book
-      status = "Henter " .. r.book.title .. " ..."
-      app.redraw("fast")
-      app.every(100)
+      fetch(r.book)
       return
     end
   end
 end
 
+-- Without touch: up/down choose a book, left/right turn the page, ok fetches.
 function button(name)
-  if name == "next" or name == "down" or name == "right" then turn(1) end
-  if name == "prev" or name == "up" or name == "left" then turn(-1) end
+  if state == "failed" then
+    if name == "ok" then retry() end
+    return
+  end
+  if state ~= "list" or #shelf == 0 then return end
+  if name == "ok" then
+    fetch(shelf[focus])
+  elseif name == "down" or name == "up" then
+    focus = math.max(1, math.min(#shelf, focus + (name == "down" and 1 or -1)))
+    page = math.floor((focus - 1) / perPage) + 1
+    app.redraw("fast")
+  elseif name == "next" or name == "right" then
+    turn(1)
+  elseif name == "prev" or name == "left" then
+    turn(-1)
+  end
 end

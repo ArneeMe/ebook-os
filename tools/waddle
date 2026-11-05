@@ -81,15 +81,35 @@ def fetch_tool(name):
             time.sleep(wait)
 
 
+def terminal():
+    """The keyboard, for the tool's questions. When waddle itself is piped in
+    (curl | python3 -), stdin is that pipe and not the person."""
+    if sys.stdin.isatty():
+        return None
+    try:
+        return open("/dev/tty")
+    except OSError:
+        return None
+
+
 def run_tool(name, args, interpreter):
-    """Runs tools/<name> from next to this file, or from GitHub when piped through curl."""
+    """Runs tools/<name> from next to this file, or from GitHub when piped through curl.
+    The script goes in a file, not on stdin, so its questions can read the keyboard."""
     here = os.path.dirname(os.path.abspath(sys.argv[0])) if sys.argv[0] not in ("", "-") else ""
     local = os.path.join(here, name) if here else ""
-    if local and os.path.isfile(local):
-        return subprocess.call([interpreter, local, *args])
-    script = fetch_tool(name)
-    stdin_args = ["-", *args] if interpreter == "python3" else ["-s", "--", *args]
-    return subprocess.run([interpreter, *stdin_args], input=script).returncode
+    tty = terminal()
+    try:
+        if local and os.path.isfile(local):
+            return subprocess.call([interpreter, local, *args], stdin=tty)
+        with tempfile.NamedTemporaryFile(prefix=f"waddle-{name}-", delete=False) as f:
+            f.write(fetch_tool(name))
+        try:
+            return subprocess.call([interpreter, f.name, *args], stdin=tty)
+        finally:
+            os.unlink(f.name)
+    finally:
+        if tty:
+            tty.close()
 
 
 # --- Dictionary -----------------------------------------------------------------
