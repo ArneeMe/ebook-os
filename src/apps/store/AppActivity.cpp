@@ -1,11 +1,14 @@
 #include "AppActivity.h"
 
+#include <Memory.h>
+
 #include <GfxRenderer.h>
 #include <HalDisplay.h>
 
 #include "AppsActivity.h"
 #include "core/MappedInputManager.h"
 #include "core/activities/ActivityManager.h"
+#include "core/activities/util/KeyboardEntryActivity.h"
 #include "core/components/UITheme.h"
 #include "core/fontIds.h"
 
@@ -39,6 +42,25 @@ void AppActivity::afterCall() {
   if (!app->running() || app->takeRedraw(mode)) {
     pendingMode = std::max(pendingMode, mode);
     requestUpdate();
+  }
+  // app.ask(): the keyboard on top; its answer comes back to the app's answer().
+  std::string prompt, text;
+  if (app->running() && app->takeAsk(prompt, text)) {
+    auto keyboard = makeUniqueNoThrow<KeyboardEntryActivity>(renderer, mappedInput, prompt, text, 100, InputType::Text);
+    if (!keyboard) return;
+    startActivityForResult(std::move(keyboard), [this](const ActivityResult& result) {
+      // Called without the render lock (ActivityManager lets go of it first).
+      {
+        RenderLock lock(*this);
+        if (app && app->running()) {
+          const std::string answer = result.isCancelled ? "" : std::get<KeyboardResult>(result.data).text;
+          app->callAnswer(result.isCancelled ? nullptr : answer.c_str());
+        }
+      }
+      pendingMode = 1;  // the keyboard was on the screen: a clean redraw
+      if (app) afterCall();
+      requestUpdate();
+    });
   }
 }
 

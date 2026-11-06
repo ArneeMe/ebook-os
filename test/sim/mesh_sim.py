@@ -519,12 +519,16 @@ class MeshTests(unittest.TestCase):
         w.begin()
         w.run(20)  # sender keys swapped (their answers are ACKs too)
         lost = []
+        message = []  # the counter of Arne's message, once it goes out
 
         def drop(raw, sender, receiver):
-            # Lose Kari's first answer to Arne.
-            if sender == 2 and receiver == 1 and packet_type(raw) == P.ACK and not lost:
-                lost.append(raw)
-                return True
+            # Lose Kari's first answer to that message (not a late answer to a key DM).
+            if sender == 1 and packet_type(raw) == P.MSG and not message:
+                message.append(P.parse_header(raw).counter)
+            if sender == 2 and receiver == 1 and packet_type(raw) == P.ACK and not lost and message:
+                if P.parse_ack(raw[P.HEADER_SIZE:]).counter == message[0]:
+                    lost.append(raw)
+                    return True
             return False
 
         w.drop = drop

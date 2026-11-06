@@ -248,6 +248,16 @@ int appTime(lua_State* L) {
   lua_pushinteger(L, t > 1600000000 ? lua_Integer(t) : 0);
   return 1;
 }
+// app.ask(prompt, text): the keyboard; the app's answer(text) gets the result.
+int appAsk(lua_State* L) {
+  const char* prompt = luaL_checkstring(L, 1);
+  const char* text = luaL_optstring(L, 2, "");
+  app().askPrompt_ = prompt;
+  app().askText_ = text;
+  app().ask_ = true;
+  return 0;
+}
+
 int appDevice(lua_State* L) {
   lua_pushstring(L, deviceName());
   return 1;
@@ -464,7 +474,7 @@ bool LuaApp::start(const Manifest& m) {
                                     {"lineHeight", screenLineHeight}, {"wrap", screenWrap}, {"line", screenLine},
                                     {"rect", screenRect},     {"dot", screenDot},           {nullptr, nullptr}};
   static const luaL_Reg appFns[] = {{"redraw", appRedraw}, {"every", appEvery},   {"close", appClose},
-                                    {"millis", appMillis}, {"time", appTime},     {"device", appDevice},
+                                    {"millis", appMillis}, {"time", appTime},     {"device", appDevice}, {"ask", appAsk},
                                     {nullptr, nullptr}};
   static const luaL_Reg storage[] = {{"read", storageRead},     {"write", storageWrite},
                                      {"remove", storageRemove}, {"list", storageList},
@@ -526,6 +536,26 @@ bool LuaApp::callButton(const char* name) {
   lua_pushstring(L_, name);
   callStartedMs_ = millis();
   return finish(lua_pcall(L_, 1, 0, 0));
+}
+
+bool LuaApp::callAnswer(const char* text) {
+  if (!L_ || !pushFunction(L_, "answer")) return L_ != nullptr;
+  current = this;
+  if (text) {
+    lua_pushstring(L_, text);
+  } else {
+    lua_pushnil(L_);
+  }
+  callStartedMs_ = millis();
+  return finish(lua_pcall(L_, 1, 0, 0));
+}
+
+bool LuaApp::takeAsk(std::string& prompt, std::string& text) {
+  if (!ask_) return false;
+  ask_ = false;
+  prompt = askPrompt_;
+  text = askText_;
+  return true;
 }
 
 bool LuaApp::takeRedraw(int& mode) {

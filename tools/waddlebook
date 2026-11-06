@@ -32,7 +32,7 @@ non-book files, and rejects zip bombs and unsafe paths.
 
 Standard library only. Works on Linux and macOS.
 """
-import argparse, html, http.client, io, json, os, posixpath, re, sys, time, urllib.parse, urllib.request, uuid, zipfile, zlib
+import argparse, html, http.client, io, json, os, posixpath, re, sys, time, unicodedata, urllib.parse, urllib.request, uuid, zipfile, zlib
 import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
 
@@ -587,6 +587,8 @@ def shelf_name(title, creator, hint):
     base = nice_name(title, creator, hint)[:-5]
     for a, b in (("æ", "ae"), ("ø", "o"), ("å", "aa"), ("Æ", "Ae"), ("Ø", "O"), ("Å", "Aa")):
         base = base.replace(a, b)
+    # Other accents off their letters: Brontë -> Bronte, not Bront.
+    base = "".join(c for c in unicodedata.normalize("NFKD", base) if not unicodedata.combining(c))
     # At most 64 characters with ".epub": the Bokhylle app's limit (LuaApp.cpp, plainName).
     base = re.sub(r"[^A-Za-z0-9]+", "-", base).strip("-")[:59].strip("-") or "book"
     return base + ".epub"

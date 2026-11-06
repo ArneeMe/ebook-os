@@ -42,12 +42,16 @@ class LuaApp {
   bool call(const char* function);
   bool call(const char* function, int x, int y);
   bool callButton(const char* name);
+  // answer(text) after app.ask(); nil when the keyboard was closed.
+  bool callAnswer(const char* text);
 
   bool running() const { return L_ != nullptr; }
   const std::string& error() const { return error_; }
 
   // Set by app.redraw(mode) and app.every(ms), read and cleared by AppActivity.
   bool takeRedraw(int& mode);
+  // Set by app.ask(prompt, text): AppActivity opens the keyboard.
+  bool takeAsk(std::string& prompt, std::string& text);
   unsigned long timerMs() const { return timerMs_; }
   bool wantsClose() const { return close_; }
 
@@ -58,6 +62,8 @@ class LuaApp {
   int redrawMode_ = 0;  // HalDisplay refresh: 0 fast, 1 half, 2 full
   unsigned long timerMs_ = 0;
   bool close_ = false;
+  bool ask_ = false;
+  std::string askPrompt_, askText_;
   unsigned long callStartedMs_ = 0;
   size_t memoryUsed_ = 0;
 
