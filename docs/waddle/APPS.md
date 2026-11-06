@@ -41,6 +41,7 @@ The app defines the functions it needs; all are optional.
 | `press(x, y)`, `move(x, y)`, `release(x, y)` | a finger or pen down, moving, up (for drawing) |
 | `button(name)` | `"up"`, `"down"`, `"left"`, `"right"`, `"ok"`, `"next"`, `"prev"` (also swipes left and right) |
 | `tick()` | every `app.every(ms)` |
+| `answer(text)` | after `app.ask()`: what was typed, or nil when the keyboard was closed |
 | `stop()` | when it closes |
 
 Back (or the home gesture) always closes the app.
@@ -54,7 +55,7 @@ Back (or the home gesture) always closes the app.
 `fill`, `lines`.
 
 **app**: `redraw(mode)` (`"fast"`, `"half"` or `"full"` refresh), `every(ms)`
-(0 stops), `close()`, `millis()`, `time()` (unix seconds, 0 when the clock is
+(0 stops), `ask(prompt, text)` (opens the keyboard; the result goes to `answer`), `close()`, `millis()`, `time()` (unix seconds, 0 when the clock is
 not set), `device()`.
 
 **storage** (its own data folder; plain file names): `read(name)` (nil when
@@ -73,7 +74,8 @@ when the app closes): `get(url)` (body, or nil and why), `download(url, name)`
 
 - **Bokhylle** (`apps/bokhylle`): the books in `books/` (`index.tsv`: file,
   title, author, bytes, tab-separated), added with `waddle book --hylle
-  <checkout>`. Only books without copyright: the repo is public.
+  <checkout>`, with a search on title and author. Only books that are free in
+  both the US and Norway (the author dead more than 70 years): the repo is public.
 
 ## Limits
 

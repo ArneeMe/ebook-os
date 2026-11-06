@@ -1,21 +1,26 @@
 -- Bokhylle: the books in books/ of the waddleos repo (added with
--- `waddle book --hylle`), fetched to /Books with a tap.
+-- `waddle book --hylle`), fetched to /Books with a tap. "Søk" filters them
+-- by title or author.
 
 local BASE = "https://raw.githubusercontent.com/ArneeMe/waddleos/waddle/books/"
 local W, H = screen.width(), screen.height()
 local ROW_H = 84
 local FOOTER = 70
 
-local shelf = {}       -- {file=, title=, author=, bytes=}
+local shelf = {}       -- every book: {file=, title=, author=, bytes=}
+local view = {}        -- the ones that match the search
+local query = ""
+local SEARCH_H = 56
 local state = "load"   -- load, list, failed
 local problem = ""
 local status = ""      -- the line under the header: "Henter …", "Lagt i Bøker"
 local fetching = nil   -- the book to download at the next tick
 local page = 1
-local focus = 1        -- the chosen book, for the buttons (up/down, ok)
+local focus = 1        -- the chosen book in view, for the buttons; 0 is the search box
 local perPage = 1
 local rows = {}        -- {y=, book=} on this page
 local top = 0
+local searchY = 0
 
 local function parse(text)
   local list = {}
@@ -31,7 +36,19 @@ local function size(bytes)
   return math.max(1, math.floor(bytes / 1024)) .. " KB"
 end
 
-local function pages() return math.max(1, math.ceil(#shelf / perPage)) end
+local function pages() return math.max(1, math.ceil(#view / perPage)) end
+
+local function filter()
+  view = {}
+  local q = query:lower()
+  for _, b in ipairs(shelf) do
+    if q == "" or b.title:lower():find(q, 1, true) or b.author:lower():find(q, 1, true) then
+      view[#view + 1] = b
+    end
+  end
+  page = 1
+  focus = #view > 0 and 1 or 0
+end
 
 function start()
   app.every(100)  -- the list is fetched at the first tick, once "Henter" shows
@@ -43,6 +60,7 @@ function tick()
     local text, err = net.get(BASE .. "index.tsv")
     if text then
       shelf, state = parse(text), "list"
+      filter()
     else
       state, problem = "failed", err or ""
     end
@@ -72,10 +90,15 @@ function draw()
     screen.text(20, top + 200, "Trykk for å prøve igjen", {size = "small"})
     return
   end
+  -- The search box.
+  searchY = top
+  screen.rect(20, searchY, W - 40, SEARCH_H - 10, {radius = 10, width = focus == 0 and 3 or 1})
+  local label = query == "" and "Søk etter tittel eller forfatter" or ("Søk: " .. query .. "   (" .. #view .. ")")
+  screen.text(36, searchY + 10, label, {size = query == "" and "small" or nil, bold = query ~= ""})
   if status ~= "" then
-    screen.text(20, top, status, {size = "small", bold = true})
+    screen.text(20, searchY + SEARCH_H, status, {size = "small", bold = true})
   end
-  local y0 = top + 36
+  local y0 = searchY + SEARCH_H + 30
   if #shelf == 0 then
     screen.text(20, y0 + 20, "Ingen bøker i hylla ennå", {bold = true})
     for i, line in ipairs(screen.wrap("Legg til med waddle book --hylle på datamaskinen.", W - 40, {size = "small"})) do
@@ -83,11 +106,15 @@ function draw()
     end
     return
   end
+  if #view == 0 then
+    screen.text(20, y0 + 20, "Ingen bøker passer til søket", {bold = true})
+    return
+  end
   perPage = math.max(1, math.floor((H - y0 - FOOTER) / ROW_H))
   page = math.min(page, pages())
   rows = {}
-  for i = (page - 1) * perPage + 1, math.min(#shelf, page * perPage) do
-    local b = shelf[i]
+  for i = (page - 1) * perPage + 1, math.min(#view, page * perPage) do
+    local b = view[i]
     local y = y0 + (#rows) * ROW_H
     rows[#rows + 1] = {y = y, book = b}
     if i == focus then screen.rect(0, y, 6, ROW_H - 4, {fill = true}) end
@@ -125,6 +152,18 @@ local function fetch(book)
   app.every(100)
 end
 
+local function search()
+  app.ask("Søk i bokhylla", query)
+end
+
+-- From the keyboard: the new search, or nil when it was closed.
+function answer(text)
+  if text == nil then return end
+  query = text
+  filter()
+  app.redraw("half")
+end
+
 local function retry()
   state = "load"
   app.every(100)
@@ -137,6 +176,10 @@ function tap(x, y)
     return
   end
   if state ~= "list" or fetching then return end
+  if y >= searchY and y < searchY + SEARCH_H then
+    search()
+    return
+  end
   if y >= H - FOOTER then
     turn(x < W / 2 and -1 or 1)
     return
@@ -149,7 +192,8 @@ function tap(x, y)
   end
 end
 
--- Without touch: up/down choose a book, left/right turn the page, ok fetches.
+-- Without touch: up/down choose a book (above the first: the search box),
+-- left/right turn the page, ok fetches the book or opens the search.
 function button(name)
   if state == "failed" then
     if name == "ok" then retry() end
@@ -157,10 +201,10 @@ function button(name)
   end
   if state ~= "list" or #shelf == 0 then return end
   if name == "ok" then
-    fetch(shelf[focus])
+    if focus == 0 then search() else fetch(view[focus]) end
   elseif name == "down" or name == "up" then
-    focus = math.max(1, math.min(#shelf, focus + (name == "down" and 1 or -1)))
-    page = math.floor((focus - 1) / perPage) + 1
+    focus = math.max(0, math.min(#view, focus + (name == "down" and 1 or -1)))
+    page = math.max(1, math.floor((focus - 1) / perPage) + 1)
     app.redraw("fast")
   elseif name == "next" or name == "right" then
     turn(1)

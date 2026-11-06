@@ -1,7 +1,7 @@
 {
   "name": "Bokhylle",
   "description": "Bøker uten opphavsrett fra waddleos-repoet",
-  "version": 2,
+  "version": 3,
   "devices": [
     "x4pro",
     "t5"
